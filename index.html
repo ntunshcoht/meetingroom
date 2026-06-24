@@ -821,17 +821,17 @@ async function apiPost(body) {
 // 初始化
 // ══════════════════════════════════════════
 async function init() {
-  // 讀公開設定
+  // 先用預設值建好時段選單，不等API
+  buildTimeOptions();
+
+  // 讀公開設定（載入後更新選單）
   try {
     const r = await apiGet({ action: 'getPublicConfig' });
     if (r.ok) {
       CFG = r;
-      buildTimeOptions();
+      buildTimeOptions(); // 用API設定重建
     }
   } catch(e) { console.warn('無法取得設定，使用預設值'); }
-
-  // 初始化時段選單（預設值）
-  if (!CFG.openStart) buildTimeOptions();
 
   // 設定最小日期為今天
   document.getElementById('f-date').min = toDateString(new Date());
@@ -892,15 +892,15 @@ function showPage(page, roomParam) {
 // 時段選單建構
 // ══════════════════════════════════════════
 function buildTimeOptions() {
-  const openStart = CFG.openStart || '08:00';
-  const openEnd   = CFG.openEnd   || '21:00';
-  const [sh, sm]  = openStart.split(':').map(Number);
-  const [eh, em]  = openEnd.split(':').map(Number);
+  const openStart = (CFG.openStart && /^\d{2}:\d{2}$/.test(CFG.openStart)) ? CFG.openStart : '08:00';
+  const openEnd   = (CFG.openEnd   && /^\d{2}:\d{2}$/.test(CFG.openEnd))   ? CFG.openEnd   : '21:00';
+  const sh = parseInt(openStart.split(':')[0]);
+  const eh = parseInt(openEnd.split(':')[0]);
 
   const opts = ['<option value="">請選擇</option>'];
   for (let h = sh; h <= eh; h++) {
     for (let m = 0; m < 60; m += 30) {
-      if (h === eh && m > em) break;
+      if (h === eh && m > 0) break; // 結束時間整點就好
       const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
       opts.push(`<option value="${t}">${t}</option>`);
     }
