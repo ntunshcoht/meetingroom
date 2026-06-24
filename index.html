@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>健康科技學院 會議室借用系統</title>
-<meta name="description" content="健康科技學院會議室借用申請與查詢系統">
+<meta name="description" content="北護健康科技學院會議室借用申請與查詢系統">
 <meta name="theme-color" content="#1a56a0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
@@ -784,7 +784,9 @@ textarea { resize: vertical; min-height: 72px; }
 // ══════════════════════════════════════════
 // 設定
 // ══════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxu4_JE4w8m7vvVkCkQcSqNFr8T_AM9zulOR9WInB6FJrNpKf3Dvlk4m_K8rLPNREIZ/exec'; // ← 部署後替換這裡
+// ↓↓↓ 唯一需要修改的地方：把 GAS Web App 網址貼在這裡 ↓↓↓
+const GAS_URL = 'YOUR_GAS_WEB_APP_URL_HERE';
+// ↑↑↑ 例如：'https://script.google.com/macros/s/AKfycb.../exec' ↑↑↑
 
 // ══════════════════════════════════════════
 // 狀態
@@ -1507,7 +1509,13 @@ async function loadAdmin() {
       room:   document.getElementById('admin-filter-room')?.value   || '',
     });
 
-    if (!r.ok) { showAdminLoginPage(); return; }
+    console.log('loadAdmin API 回傳：', JSON.stringify(r));
+    if (!r.ok) {
+      console.error('loadAdmin 失敗：', r.error);
+      showToast('載入失敗：' + r.error, true);
+      showAdminLoginPage();
+      return;
+    }
 
     const bookings = r.bookings || [];
     const pending  = bookings.filter(b => b.status === '待審核');
