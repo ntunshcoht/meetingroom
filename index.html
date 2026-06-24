@@ -1414,7 +1414,7 @@ async function loadKeyOp(room) {
         <div class="login-logo">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
         </div>
-        <div class="login-title">磁卡操作</div>
+        <div class="login-title">磁卡操作 - ${room}</div>
         <div class="login-sub">需要管理員身分才能操作磁卡借還</div>
         <button class="btn btn-primary btn-full" onclick="showAdminLogin()">管理員登入</button>
       </div>`;
@@ -1836,7 +1836,10 @@ async function doAdminLogin() {
       setAdminUI(true);
       closeModal('modal-key');
       showToast(`✅ 歡迎，${email}`);
-      showPage('admin');
+      // 登入後回到原本的頁面（例如 keyop），不強制跳管理後台
+      const returnPage = new URLSearchParams(location.search).get('page') || 'admin';
+      const returnRoom = new URLSearchParams(location.search).get('room') || '';
+      showPage(returnPage, returnRoom);
     } else {
       showToast('❌ 此 Email 不在管理員名單中', true);
     }
