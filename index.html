@@ -892,17 +892,13 @@ function showPage(page, roomParam) {
 // 時段選單建構
 // ══════════════════════════════════════════
 function buildTimeOptions() {
-  const openStart = (CFG.openStart && /^\d{2}:\d{2}$/.test(CFG.openStart)) ? CFG.openStart : '08:00';
-  const openEnd   = (CFG.openEnd   && /^\d{2}:\d{2}$/.test(CFG.openEnd))   ? CFG.openEnd   : '21:00';
-  const sh = parseInt(openStart.split(':')[0]);
-  const eh = parseInt(openEnd.split(':')[0]);
-
+  // 固定 08:00–21:00，每 30 分鐘一格，不依賴 API 設定
   const opts = ['<option value="">請選擇</option>'];
-  for (let h = sh; h <= eh; h++) {
+  for (let h = 8; h <= 21; h++) {
     for (let m = 0; m < 60; m += 30) {
-      if (h === eh && m > 0) break; // 結束時間整點就好
-      const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-      opts.push(`<option value="${t}">${t}</option>`);
+      if (h === 21 && m > 0) break;
+      const t = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+      opts.push('<option value="' + t + '">' + t + '</option>');
     }
   }
   const html = opts.join('');
@@ -951,19 +947,19 @@ function onTimeChange() {
   const endSel = document.getElementById('f-end');
   const alertDiv = document.getElementById('apply-conflict-alert');
 
-  // 當選了開始時間，重建結束時間選單（只顯示開始之後的時段）
+  // 當選了開始時間，重建結束時間選單（只顯示開始之後的時段，固定到 21:00）
   if (s) {
-    const openEnd = (CFG.openEnd && /^\d{2}:\d{2}$/.test(CFG.openEnd)) ? CFG.openEnd : '21:00';
-    const eh = parseInt(openEnd.split(':')[0]);
-    const [sh] = s.split(':').map(Number);
+    const sh = parseInt(s.split(':')[0]);
+    const sm = parseInt(s.split(':')[1]);
     const prevEnd = endSel.value;
     const opts = ['<option value="">請選擇</option>'];
-    for (let h = sh; h <= eh; h++) {
+    for (let h = sh; h <= 21; h++) {
       for (let m = 0; m < 60; m += 30) {
-        if (h === sh && m === 0) continue; // 不能等於開始時間
-        if (h === eh && m > 0) break;
-        const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-        opts.push(`<option value="${t}"${t===prevEnd?' selected':''}>${t}</option>`);
+        // 跳過等於或早於開始時間的選項
+        if (h === sh && m <= sm) continue;
+        if (h === 21 && m > 0) break;
+        const t = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        opts.push('<option value="' + t + '"' + (t===prevEnd?' selected':'') + '>' + t + '</option>');
       }
     }
     endSel.innerHTML = opts.join('');
