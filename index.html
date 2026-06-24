@@ -947,28 +947,45 @@ async function onRoomOrDateChange() {
 }
 
 function onTimeChange() {
-  // 衝突提示由後端在送出時決定
   const s = document.getElementById('f-start').value;
-  const e = document.getElementById('f-end').value;
-  const alert = document.getElementById('apply-conflict-alert');
+  const endSel = document.getElementById('f-end');
+  const alertDiv = document.getElementById('apply-conflict-alert');
 
-  if (!s || !e) { alert.style.display = 'none'; return; }
+  // 當選了開始時間，重建結束時間選單（只顯示開始之後的時段）
+  if (s) {
+    const openEnd = (CFG.openEnd && /^\d{2}:\d{2}$/.test(CFG.openEnd)) ? CFG.openEnd : '21:00';
+    const eh = parseInt(openEnd.split(':')[0]);
+    const [sh] = s.split(':').map(Number);
+    const prevEnd = endSel.value;
+    const opts = ['<option value="">請選擇</option>'];
+    for (let h = sh; h <= eh; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        if (h === sh && m === 0) continue; // 不能等於開始時間
+        if (h === eh && m > 0) break;
+        const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        opts.push(`<option value="${t}"${t===prevEnd?' selected':''}>${t}</option>`);
+      }
+    }
+    endSel.innerHTML = opts.join('');
+  }
+
+  const e = endSel.value;
+  if (!s || !e) { alertDiv.style.display = 'none'; return; }
 
   const earlyH = parseInt((CFG.earlyHour || '09:00').split(':')[0]);
   const lateH  = parseInt((CFG.lateHour  || '18:00').split(':')[0]);
   const startH = parseInt(s.split(':')[0]);
   const endH   = parseInt(e.split(':')[0]);
-
   const msgs = [];
   if (startH < earlyH) msgs.push(`⚠️ 開始時間早於 ${CFG.earlyHour || '09:00'}，請提早至院辦借磁卡`);
-  if (endH   >= lateH)  msgs.push(`🌙 結束時間超過 ${CFG.lateHour  || '18:00'}，磁卡需隔日歸還`);
+  if (endH   >= lateH) msgs.push(`🌙 結束時間超過 ${CFG.lateHour  || '18:00'}，磁卡需隔日歸還`);
 
   if (msgs.length > 0) {
-    alert.className = 'alert alert-warning';
-    alert.innerHTML = msgs.join('<br>');
-    alert.style.display = 'flex';
+    alertDiv.className = 'alert alert-warning';
+    alertDiv.innerHTML = msgs.join('<br>');
+    alertDiv.style.display = 'flex';
   } else {
-    alert.style.display = 'none';
+    alertDiv.style.display = 'none';
   }
 }
 
