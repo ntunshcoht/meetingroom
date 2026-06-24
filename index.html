@@ -1010,7 +1010,7 @@ async function submitApply() {
   };
 
   try {
-    const r = await apiPost(body);
+    const r = await apiGet(body);
     btn.disabled = false;
     btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> 送出申請';
 
@@ -1052,7 +1052,7 @@ async function submitTempApply(room) {
   btn.disabled = true; btn.textContent = '送出中…';
 
   try {
-    const r = await apiPost({
+    const r = await apiGet({
       action: 'submitBooking', type: '臨時借用',
       name, email, phone, unit, room,
       date: today.replace(/-/g,'/'),
@@ -1489,8 +1489,8 @@ async function loadKeyOp(room) {
 async function doKeyBorrow(bookingId, room) {
   if (!confirm(`確認借出 ${room} 磁卡？`)) return;
   try {
-    const r = await apiPost({ action: 'keyBorrow', bookingId, room, adminEmail, token: adminToken });
-    if (r.ok) { showToast('磁卡借出完成'); loadKeyOp(room); }
+    const r = await apiGet({ action: 'keyBorrow', bookingId, room, adminEmail, token: adminToken });
+    if (r.ok) { showToast('✅ 磁卡借出完成'); loadKeyOp(room); }
     else showToast(`❌ ${r.error}`, true);
   } catch(e) { showToast('操作失敗', true); }
 }
@@ -1498,8 +1498,8 @@ async function doKeyBorrow(bookingId, room) {
 async function doKeyReturn(bookingId, room) {
   if (!confirm(`確認 ${room} 磁卡歸還？`)) return;
   try {
-    const r = await apiPost({ action: 'keyReturn', bookingId, room, adminEmail, token: adminToken });
-    if (r.ok) { showToast('磁卡歸還完成'); loadKeyOp(room); }
+    const r = await apiGet({ action: 'keyReturn', bookingId, room, adminEmail, token: adminToken });
+    if (r.ok) { showToast('✅ 磁卡歸還完成'); loadKeyOp(room); }
     else showToast(`❌ ${r.error}`, true);
   } catch(e) { showToast('操作失敗', true); }
 }
@@ -1643,7 +1643,7 @@ async function showReviewModal(bookingId) {
 }
 
 async function doApprove() {
-  const r = await apiPost({
+  const r = await apiGet({
     action: 'reviewBooking', bookingId: currentReviewId,
     decision: '核准', adminEmail, token: adminToken,
   });
@@ -1653,7 +1653,7 @@ async function doApprove() {
 
 async function doReject() {
   const reason = document.getElementById('reject-reason')?.value || '';
-  const r = await apiPost({
+  const r = await apiGet({
     action: 'reviewBooking', bookingId: currentReviewId,
     decision: '拒絕', reason, adminEmail, token: adminToken,
   });
