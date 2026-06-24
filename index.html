@@ -1692,7 +1692,7 @@ async function loadReport() {
         </div>
       </div>
 
-      ${curReport.length === 0 ? '<div class="empty"><p>此月份尚無報表資料，請先點「產生本月報表」</p></div>' : `
+      ${curReport.length === 0 ? '<div class="empty" style="padding:2rem"><p style="margin-bottom:1rem">尚無報表資料</p><button class="btn btn-primary" onclick="triggerReport()">立即產生本月報表</button></div>' : `
 
       <div class="report-grid">
         ${curReport.map(row => `
@@ -1747,12 +1747,18 @@ async function switchReportMonth(ym) {
 }
 
 async function triggerReport() {
-  if (!confirm('確認產生本月使用率報表並寄送 Email？')) return;
+  if (!confirm('確認產生本月使用率報表？')) return;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '產生中…';
   try {
-    const r = await apiPost({ action: 'triggerReport', adminEmail, token: adminToken });
-    if (r.ok) { showToast('報表已產生並寄出'); setTimeout(loadReport, 1500); }
-    else showToast(`❌ ${r.error}`, true);
-  } catch(e) { showToast('操作失敗', true); }
+    const r = await apiGet({ action: 'triggerReport', adminEmail, token: adminToken });
+    btn.disabled = false; btn.textContent = '產生本月報表';
+    if (r.ok) { showToast('✅ 報表已產生'); setTimeout(loadReport, 1000); }
+    else showToast('❌ ' + (r.error||'失敗'), true);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '產生本月報表';
+    showToast('操作失敗', true);
+  }
 }
 
 // ══════════════════════════════════════════
