@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康科技學院 會議室借用系統</title>
+<meta name="description" content="健康科技學院會議室借用申請與查詢系統">
+<meta name="theme-color" content="#1a56a0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ─────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue:       #1a56a0;
+  --blue-mid:   #2563eb;
+  --blue-light: #dbeafe;
+  --blue-pale:  #eff6ff;
+  --green:      #15803d;
+  --green-light:#dcfce7;
+  --amber:      #b45309;
+  --amber-light:#fef3c7;
+  --red:        #dc2626;
+  --red-light:  #fee2e2;
+  --gray-50:    #f8fafc;
+  --gray-100:   #f1f5f9;
+  --gray-200:   #e2e8f0;
+  --gray-400:   #94a3b8;
+  --gray-600:   #475569;
+  --gray-800:   #1e293b;
+  --white:      #ffffff;
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+  --font:       'Noto Sans TC', system-ui, sans-serif;
+  /* Room colors */
+  --room-f1023: #1a56a0;
+  --room-f1024: #0f766e;
+  --room-f8091: #7c3aed;
+}
+html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--gray-50);
+  color: var(--gray-800);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Layout ───────────────────────────────── */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── Top Nav ──────────────────────────────── */
+.topnav {
+  background: var(--blue);
+  color: white;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(26,86,160,0.25);
+}
+.topnav-brand {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex; align-items: center; gap: 8px;
+}
+.topnav-brand svg { opacity: 0.9; }
+.topnav-actions { display: flex; align-items: center; gap: 8px; }
+.topnav-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.topnav-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Tab Bar ──────────────────────────────── */
+.tabbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky; top: 52px; z-index: 99;
+}
+.tabbar::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0;
+  padding: 0 1.1rem;
+  height: 44px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-600);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--blue); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ── Main Content ─────────────────────────── */
+.main { flex: 1; padding: 1.25rem; max-width: 860px; margin: 0 auto; width: 100%; }
+
+/* ── Page Sections ────────────────────────── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Card ─────────────────────────────────── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex; align-items: center; gap: 7px;
+}
+.card-title svg { color: var(--blue); }
+
+/* ── Form ─────────────────────────────────── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.form-grid.full { grid-template-columns: 1fr; }
+@media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field.span2 { grid-column: 1 / -1; }
+label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+label .req { color: var(--red); margin-left: 2px; }
+input, select, textarea {
+  font-family: var(--font);
+  font-size: 0.9rem;
+  padding: 8px 11px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--gray-800);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--blue-mid);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+input.error, select.error { border-color: var(--red); }
+textarea { resize: vertical; min-height: 72px; }
+.field-hint { font-size: 0.75rem; color: var(--gray-400); }
+.field-error { font-size: 0.75rem; color: var(--red); display: none; }
+.field-error.show { display: block; }
+
+/* ── Buttons ──────────────────────────────── */
+.btn {
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover:not(:disabled) { background: var(--blue-mid); }
+.btn-success { background: var(--green); color: white; }
+.btn-success:hover:not(:disabled) { background: #166534; }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover:not(:disabled) { background: #b91c1c; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-600);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--gray-100); }
+.btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ── Badge / Status ───────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.72rem; font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+}
+.badge-pending  { background: var(--blue-light);  color: var(--blue); }
+.badge-approved { background: var(--green-light); color: var(--green); }
+.badge-rejected { background: var(--red-light);   color: var(--red); }
+.badge-borrowed { background: var(--amber-light); color: var(--amber); }
+.badge-returned { background: var(--gray-100);    color: var(--gray-600); }
+.badge-conflict { background: #fef9c3; color: #854d0e; }
+.badge-temp     { background: #fae8ff; color: #7e22ce; }
+
+/* Room badges */
+.room-tag {
+  display: inline-block;
+  font-size: 0.72rem; font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: white;
+}
+.room-F1023  { background: var(--room-f1023); }
+.room-F1024  { background: var(--room-f1024); }
+.room-F809-1 { background: var(--room-f8091); }
+
+/* ── Alert Banner ─────────────────────────── */
+.alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.alert-warning { background: var(--amber-light); color: #78350f; border: 1px solid #fcd34d; }
+.alert-success { background: var(--green-light); color: #14532d; border: 1px solid #86efac; }
+.alert-error   { background: var(--red-light);   color: #7f1d1d; border: 1px solid #fca5a5; }
+.alert-info    { background: var(--blue-pale);   color: var(--blue); border: 1px solid #93c5fd; }
+
+/* ── Toast ────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 1.5rem; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--gray-800);
+  color: white;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 9999;
+  max-width: 90vw;
+  text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Modal ────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+}
+.modal-header {
+  padding: 1.1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-size: 0.95rem; font-weight: 600; }
+.modal-body { padding: 1.1rem 1.25rem; }
+.modal-footer {
+  padding: 0.75rem 1.25rem 1rem;
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-400); padding: 2px;
+  display: flex; align-items: center;
+}
+
+/* ── Room Status Card (門口 QR 頁) ─────────── */
+.room-hero {
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.5rem;
+  color: white;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+.room-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+}
+.room-hero-name { font-size: 1.6rem; font-weight: 600; margin-bottom: 4px; }
+.room-hero-sub  { font-size: 0.85rem; opacity: 0.8; }
+.room-status-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+.status-free { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,0.25); }
+.status-busy { background: #f87171; box-shadow: 0 0 0 4px rgba(248,113,113,0.25); }
+.room-status-label { font-size: 1.1rem; font-weight: 500; margin-top: 1rem; display: flex; align-items: center; }
+
+/* ── Calendar ─────────────────────────────── */
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.cal-month { font-size: 1rem; font-weight: 600; }
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.cal-weekday {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gray-400);
+  padding: 4px 0 8px;
+}
+.cal-day {
+  min-height: 64px;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  cursor: pointer;
+  transition: border-color 0.15s;
+  position: relative;
+}
+.cal-day:hover { border-color: var(--blue-mid); }
+.cal-day.other-month { background: var(--gray-50); }
+.cal-day.today { border-color: var(--blue-mid); border-width: 2px; }
+.cal-day-num {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-bottom: 2px;
+}
+.cal-day.today .cal-day-num { color: var(--blue); font-weight: 700; }
+.cal-event {
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: white;
+  margin-bottom: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cal-event-F1023  { background: var(--room-f1023); }
+.cal-event-F1024  { background: var(--room-f1024); }
+.cal-event-F809-1 { background: var(--room-f8091); }
+
+/* ── List Table ───────────────────────────── */
+.booking-list { display: flex; flex-direction: column; gap: 8px; }
+.booking-item {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.booking-item:hover { border-color: var(--blue-mid); box-shadow: var(--shadow-sm); }
+.booking-item.conflict { border-left: 3px solid var(--amber); }
+.booking-item-main { display: flex; flex-direction: column; gap: 4px; }
+.booking-item-title { font-size: 0.9rem; font-weight: 500; }
+.booking-item-meta  { font-size: 0.78rem; color: var(--gray-600); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.booking-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+/* ── Admin Filter Bar ─────────────────────── */
+.filter-bar {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.filter-bar select, .filter-bar input {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  flex: 1; min-width: 120px; max-width: 180px;
+}
+
+/* ── Report ───────────────────────────────── */
+.report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+@media (max-width: 560px) { .report-grid { grid-template-columns: 1fr 1fr; } }
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+.stat-label { font-size: 0.72rem; color: var(--gray-400); font-weight: 500; margin-bottom: 4px; }
+.stat-value { font-size: 1.4rem; font-weight: 600; color: var(--gray-800); }
+.stat-sub   { font-size: 0.72rem; color: var(--gray-400); margin-top: 2px; }
+
+.progress-bar-wrap { height: 8px; background: var(--gray-100); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+.progress-bar { height: 100%; border-radius: 99px; transition: width 0.5s; }
+
+/* ── Loading Spinner ──────────────────────── */
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid var(--gray-200);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-center {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 3rem; gap: 1rem; color: var(--gray-400); font-size: 0.875rem;
+}
+
+/* ── Divider ──────────────────────────────── */
+.divider { border: none; border-top: 1px solid var(--gray-100); margin: 1rem 0; }
+
+/* ── Empty State ──────────────────────────── */
+.empty {
+  text-align: center; padding: 2.5rem 1rem;
+  color: var(--gray-400);
+}
+.empty svg { margin-bottom: 0.75rem; opacity: 0.4; }
+.empty p { font-size: 0.875rem; }
+
+/* ── Key Op Page (磁卡借還) ───────────────── */
+.keyop-room-header {
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  color: white;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ── Admin Login ──────────────────────────── */
+.login-wrap {
+  max-width: 360px; margin: 4rem auto;
+  text-align: center;
+}
+.login-logo {
+  width: 56px; height: 56px;
+  background: var(--blue);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+.login-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.4rem; }
+.login-sub   { font-size: 0.85rem; color: var(--gray-400); margin-bottom: 1.75rem; }
+
+/* ── Slot Picker ──────────────────────────── */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 5px; margin-top: 6px;
+}
+.slot-btn {
+  padding: 5px 4px;
+  font-size: 0.75rem; font-weight: 500;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--gray-600);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+}
+.slot-btn:hover:not(.occupied) { border-color: var(--blue-mid); color: var(--blue); }
+.slot-btn.occupied { background: var(--red-light); color: var(--red); border-color: #fca5a5; cursor: not-allowed; font-size: 0.68rem; }
+.slot-btn.selected { background: var(--blue); color: white; border-color: var(--blue); }
+
+/* ── Responsive tweaks ────────────────────── */
+@media (max-width: 640px) {
+  .main { padding: 0.9rem; }
+  .card { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Top Navigation -->
+  <nav class="topnav">
+    <div class="topnav-brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      健康科技學院 會議室借用系統
+    </div>
+    <div class="topnav-actions">
+      <button class="topnav-btn" id="btn-mybook" onclick="showPage('mybook')">查詢我的申請</button>
+      <button class="topnav-btn" id="btn-admin-login" onclick="showAdminLogin()" style="display:none">管理登入</button>
+      <button class="topnav-btn" id="btn-admin-out"  onclick="adminLogout()"    style="display:none">登出</button>
+    </div>
+  </nav>
+
+  <!-- Tab Bar -->
+  <div class="tabbar" id="tabbar">
+    <div class="tab active" data-page="apply" onclick="showPage('apply')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>申請借用
+    </div>
+    <div class="tab" data-page="calendar" onclick="showPage('calendar')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>行事曆
+    </div>
+    <div class="tab" data-page="list" onclick="showPage('list')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>借用清單
+    </div>
+    <div class="tab admin-tab" data-page="admin" onclick="showPage('admin')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>管理後台
+    </div>
+    <div class="tab admin-tab" data-page="report" onclick="showPage('report')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>使用報表
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- ═══ PAGE: 申請借用 ═══ -->
+    <div class="page active" id="page-apply">
+      <div class="card">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          填寫借用申請
+        </div>
+
+        <div id="apply-conflict-alert" style="display:none"></div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>姓名<span class="req">*</span></label>
+            <input type="text" id="f-name" placeholder="請輸入姓名">
+            <span class="field-error" id="e-name">請填寫姓名</span>
+          </div>
+          <div class="field">
+            <label>單位<span class="req">*</span></label>
+            <input type="text" id="f-unit" placeholder="系所或單位">
+            <span class="field-error" id="e-unit">請填寫單位</span>
+          </div>
+          <div class="field">
+            <label>電子郵件<span class="req">*</span></label>
+            <input type="email" id="f-email" placeholder="example@ntunhs.edu.tw">
+            <span class="field-error" id="e-email">請填寫正確的 Email</span>
+          </div>
+          <div class="field">
+            <label>手機號碼<span class="req">*</span></label>
+            <input type="tel" id="f-phone" placeholder="09xx-xxx-xxx">
+            <span class="field-error" id="e-phone">請填寫手機號碼</span>
+          </div>
+          <div class="field">
+            <label>會議室<span class="req">*</span></label>
+            <select id="f-room" onchange="onRoomOrDateChange()">
+              <option value="">請選擇</option>
+              <option value="F1023">F1023 會議室</option>
+              <option value="F1024">F1024 會議室</option>
+              <option value="F809-1">F809-1 會議室</option>
+            </select>
+            <span class="field-error" id="e-room">請選擇會議室</span>
+          </div>
+          <div class="field">
+            <label>借用日期<span class="req">*</span></label>
+            <input type="date" id="f-date" onchange="onRoomOrDateChange()">
+            <span class="field-error" id="e-date">請選擇日期</span>
+          </div>
+          <div class="field">
+            <label>開始時間<span class="req">*</span></label>
+            <select id="f-start" onchange="onTimeChange()">
+              <option value="">請選擇</option>
+            </select>
+            <span class="field-error" id="e-start">請選擇開始時間</span>
+          </div>
+          <div class="field">
+            <label>結束時間<span class="req">*</span></label>
+            <select id="f-end" onchange="onTimeChange()">
+              <option value="">請選擇</option>
+            </select>
+            <span class="field-error" id="e-end">請選擇結束時間</span>
+          </div>
+          <div class="field span2">
+            <label>可用時段預覽</label>
+            <div id="slot-preview" style="color:var(--gray-400);font-size:0.8rem;padding:6px 0">請先選擇會議室與日期</div>
+          </div>
+          <div class="field span2">
+            <label>借用用途<span class="req">*</span></label>
+            <textarea id="f-purpose" placeholder="請簡述借用用途（如：系務會議、研究討論…）" rows="3"></textarea>
+            <span class="field-error" id="e-purpose">請填寫借用用途</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:1.1rem;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="resetApplyForm()">清除</button>
+          <button class="btn btn-primary" id="btn-submit-apply" onclick="submitApply()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            送出申請
+          </button>
+        </div>
+      </div>
+
+      <!-- 時段說明 -->
+      <div class="card" style="padding:0.9rem 1.1rem">
+        <div style="font-size:0.8rem;color:var(--gray-600);display:flex;flex-direction:column;gap:5px">
+          <div>📅 開放借用時段：每日 08:00 – 21:00</div>
+          <div>⚠️ 09:00 前借用須提早至院辦借取磁卡</div>
+          <div>🌙 18:00 後使用須隔日歸還磁卡</div>
+          <div>📧 申請送出後請等候院辦 Email 通知審核結果</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: 行事曆 ═══ -->
+    <div class="page" id="page-calendar">
+      <!-- 房間圖例 -->
+      <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.8rem">
+          <span style="width:12px;height:12px;border-radius:2px;background:var(--room-f1023);display:inline-block"></span>F1023
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.8rem">
+          <span style="width:12px;height:12px;border-radius:2px;background:var(--room-f1024);display:inline-block"></span>F1024
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.8rem">
+          <span style="width:12px;height:12px;border-radius:2px;background:var(--room-f8091);display:inline-block"></span>F809-1
+        </span>
+      </div>
+      <div class="card">
+        <div class="cal-header">
+          <button class="btn btn-ghost btn-sm" onclick="calPrev()">&#8592; 上月</button>
+          <div class="cal-month" id="cal-month-label"></div>
+          <button class="btn btn-ghost btn-sm" onclick="calNext()">下月 &#8594;</button>
+        </div>
+        <div class="cal-grid" id="cal-weekdays"></div>
+        <div class="cal-grid" id="cal-days" style="margin-top:2px"></div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: 借用清單 ═══ -->
+    <div class="page" id="page-list">
+      <div class="filter-bar">
+        <select id="list-filter-room" onchange="loadList()">
+          <option value="">全部會議室</option>
+          <option value="F1023">F1023</option>
+          <option value="F1024">F1024</option>
+          <option value="F809-1">F809-1</option>
+        </select>
+        <select id="list-filter-status" onchange="loadList()">
+          <option value="">全部狀態</option>
+          <option value="待審核">待審核</option>
+          <option value="已核准">已核准</option>
+          <option value="已拒絕">已拒絕</option>
+        </select>
+        <input type="date" id="list-filter-date" onchange="loadList()" placeholder="日期篩選">
+        <button class="btn btn-ghost btn-sm" onclick="clearListFilter()">清除篩選</button>
+      </div>
+      <div id="list-container">
+        <div class="loading-center"><div class="spinner"></div>載入中…</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: 我的申請 ═══ -->
+    <div class="page" id="page-mybook">
+      <div class="card">
+        <div class="card-title">查詢我的申請記錄</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="field" style="flex:1">
+            <label>輸入申請時使用的 Email</label>
+            <input type="email" id="mybook-email" placeholder="your@email.com">
+          </div>
+          <button class="btn btn-primary" onclick="loadMyBookings()">查詢</button>
+        </div>
+      </div>
+      <div id="mybook-result"></div>
+    </div>
+
+    <!-- ═══ PAGE: 門口 QR 頁 (room) ═══ -->
+    <div class="page" id="page-room">
+      <div id="room-content">
+        <div class="loading-center"><div class="spinner"></div>載入中…</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: 磁卡借還 (keyop) ═══ -->
+    <div class="page" id="page-keyop">
+      <div id="keyop-content">
+        <div class="loading-center"><div class="spinner"></div>載入中…</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: 管理後台 ═══ -->
+    <div class="page" id="page-admin">
+      <div id="admin-content">
+        <div class="loading-center"><div class="spinner"></div>載入中…</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: 報表 ═══ -->
+    <div class="page" id="page-report">
+      <div id="report-content">
+        <div class="loading-center"><div class="spinner"></div>載入中…</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Modal: 審核 -->
+<div class="modal-overlay" id="modal-review">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-review-title">審核申請</div>
+      <button class="modal-close" onclick="closeModal('modal-review')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-review-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-review')">取消</button>
+      <button class="btn btn-danger" id="modal-reject-btn" onclick="doReject()">拒絕</button>
+      <button class="btn btn-success" id="modal-approve-btn" onclick="doApprove()">核准</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 磁卡 (管理後台用) -->
+<div class="modal-overlay" id="modal-key">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-key-title">磁卡操作</div>
+      <button class="modal-close" onclick="closeModal('modal-key')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-key-body"></div>
+    <div class="modal-footer" id="modal-key-footer"></div>
+  </div>
+</div>
+
+<!-- Modal: 申請詳情 -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">申請詳情</div>
+      <button class="modal-close" onclick="closeModal('modal-detail')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-detail-body"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-detail')">關閉</button></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 設定
+// ══════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxu4_JE4w8m7vvVkCkQcSqNFr8T_AM9zulOR9WInB6FJrNpKf3Dvlk4m_K8rLPNREIZ/exec'; // ← 部署後替換這裡
+
+// ══════════════════════════════════════════
+// 狀態
+// ══════════════════════════════════════════
+let CFG         = {};          // 公開設定快取
+let adminEmail  = '';
+let adminToken  = '';
+let calYear     = new Date().getFullYear();
+let calMonth    = new Date().getMonth() + 1;
+let calEvents   = [];
+let currentReviewId = '';
+let currentKeyBookingId = '';
+let currentKeyRoom = '';
+
+// ══════════════════════════════════════════
+// API 呼叫
+// ══════════════════════════════════════════
+async function apiGet(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${GAS_URL}?${qs}`);
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ══════════════════════════════════════════
+// 初始化
+// ══════════════════════════════════════════
+async function init() {
+  // 讀公開設定
+  try {
+    const r = await apiGet({ action: 'getPublicConfig' });
+    if (r.ok) {
+      CFG = r;
+      buildTimeOptions();
+    }
+  } catch(e) { console.warn('無法取得設定，使用預設值'); }
+
+  // 初始化時段選單（預設值）
+  if (!CFG.openStart) buildTimeOptions();
+
+  // 設定最小日期為今天
+  document.getElementById('f-date').min = toDateString(new Date());
+
+  // 解析 URL 參數決定初始頁面
+  const params = new URLSearchParams(location.search);
+  const page   = params.get('page') || 'apply';
+  const room   = params.get('room') || '';
+
+  // 還原管理員 session
+  const savedEmail = sessionStorage.getItem('adminEmail');
+  const savedToken = sessionStorage.getItem('adminToken');
+  if (savedEmail && savedToken) {
+    adminEmail = savedEmail;
+    adminToken = savedToken;
+    setAdminUI(true);
+  } else {
+    // 顯示管理員登入按鈕
+    document.getElementById('btn-admin-login').style.display = '';
+  }
+
+  showPage(page, room);
+
+  // 行事曆預載
+  if (page === 'calendar') loadCalendar();
+}
+
+// ══════════════════════════════════════════
+// 頁面切換
+// ══════════════════════════════════════════
+function showPage(page, roomParam) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+  const el = document.getElementById(`page-${page}`);
+  if (el) el.classList.add('active');
+
+  const tab = document.querySelector(`[data-page="${page}"]`);
+  if (tab) tab.classList.add('active');
+
+  // 更新 URL（不重載）
+  const url = new URL(location.href);
+  url.searchParams.set('page', page);
+  if (roomParam) url.searchParams.set('room', roomParam);
+  else url.searchParams.delete('room');
+  history.replaceState(null, '', url);
+
+  // 各頁面初始化
+  if (page === 'calendar') loadCalendar();
+  if (page === 'list')     loadList();
+  if (page === 'room')     loadRoomStatus(roomParam || new URLSearchParams(location.search).get('room'));
+  if (page === 'keyop')    loadKeyOp(roomParam || new URLSearchParams(location.search).get('room'));
+  if (page === 'admin')    loadAdmin();
+  if (page === 'report')   loadReport();
+}
+
+// ══════════════════════════════════════════
+// 時段選單建構
+// ══════════════════════════════════════════
+function buildTimeOptions() {
+  const openStart = CFG.openStart || '08:00';
+  const openEnd   = CFG.openEnd   || '21:00';
+  const [sh, sm]  = openStart.split(':').map(Number);
+  const [eh, em]  = openEnd.split(':').map(Number);
+
+  const opts = ['<option value="">請選擇</option>'];
+  for (let h = sh; h <= eh; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      if (h === eh && m > em) break;
+      const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      opts.push(`<option value="${t}">${t}</option>`);
+    }
+  }
+  const html = opts.join('');
+  document.getElementById('f-start').innerHTML = html;
+  document.getElementById('f-end').innerHTML   = html;
+}
+
+// ══════════════════════════════════════════
+// 申請頁：時段衝突預覽
+// ══════════════════════════════════════════
+async function onRoomOrDateChange() {
+  const room = document.getElementById('f-room').value;
+  const date = document.getElementById('f-date').value;
+  const preview = document.getElementById('slot-preview');
+
+  if (!room || !date) {
+    preview.innerHTML = '<span style="color:var(--gray-400)">請先選擇會議室與日期</span>';
+    return;
+  }
+
+  preview.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px"></div>';
+
+  try {
+    const r = await apiGet({ action: 'getAvailableSlots', room, date });
+    if (!r.ok) { preview.innerHTML = '無法取得時段資訊'; return; }
+
+    let html = '';
+    if (r.occupied.length > 0) {
+      html += '<div style="font-size:0.78rem;color:var(--red);margin-bottom:5px">⛔ 已被借用：' +
+        r.occupied.map(o => o.label).join('、') + '</div>';
+    }
+    if (r.freeSlots.length > 0) {
+      html += '<div style="font-size:0.78rem;color:var(--green)">✅ 可借時段：' +
+        r.freeSlots.map(s => `${s.start}–${s.end}`).join('、') + '</div>';
+    } else {
+      html += '<div style="font-size:0.78rem;color:var(--red)">此日期該會議室已全天借完</div>';
+    }
+    preview.innerHTML = html;
+  } catch(e) {
+    preview.innerHTML = '<span style="color:var(--gray-400)">無法取得時段資訊</span>';
+  }
+}
+
+function onTimeChange() {
+  // 衝突提示由後端在送出時決定
+  const s = document.getElementById('f-start').value;
+  const e = document.getElementById('f-end').value;
+  const alert = document.getElementById('apply-conflict-alert');
+
+  if (!s || !e) { alert.style.display = 'none'; return; }
+
+  const earlyH = parseInt((CFG.earlyHour || '09:00').split(':')[0]);
+  const lateH  = parseInt((CFG.lateHour  || '18:00').split(':')[0]);
+  const startH = parseInt(s.split(':')[0]);
+  const endH   = parseInt(e.split(':')[0]);
+
+  const msgs = [];
+  if (startH < earlyH) msgs.push(`⚠️ 開始時間早於 ${CFG.earlyHour || '09:00'}，請提早至院辦借磁卡`);
+  if (endH   >= lateH)  msgs.push(`🌙 結束時間超過 ${CFG.lateHour  || '18:00'}，磁卡需隔日歸還`);
+
+  if (msgs.length > 0) {
+    alert.className = 'alert alert-warning';
+    alert.innerHTML = msgs.join('<br>');
+    alert.style.display = 'flex';
+  } else {
+    alert.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════
+// 申請送出
+// ══════════════════════════════════════════
+async function submitApply() {
+  if (!validateApplyForm()) return;
+
+  const btn = document.getElementById('btn-submit-apply');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:15px;height:15px;border-width:2px"></div> 送出中…';
+
+  const body = {
+    action:    'submitBooking',
+    type:      '一般預約',
+    name:      document.getElementById('f-name').value.trim(),
+    email:     document.getElementById('f-email').value.trim(),
+    phone:     document.getElementById('f-phone').value.trim(),
+    unit:      document.getElementById('f-unit').value.trim(),
+    room:      document.getElementById('f-room').value,
+    date:      document.getElementById('f-date').value.replace(/-/g,'/'),
+    startTime: document.getElementById('f-start').value,
+    endTime:   document.getElementById('f-end').value,
+    purpose:   document.getElementById('f-purpose').value.trim(),
+  };
+
+  try {
+    const r = await apiPost(body);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> 送出申請';
+
+    if (r.ok) {
+      const alertDiv = document.getElementById('apply-conflict-alert');
+      alertDiv.className = r.hasConflict ? 'alert alert-warning' : 'alert alert-success';
+      alertDiv.innerHTML = `✅ 申請已送出！申請編號：<strong>${r.bookingId}</strong><br>${r.message}`;
+      alertDiv.style.display = 'flex';
+      resetApplyForm(true);
+      showToast('申請已送出，請查收確認 Email');
+    } else {
+      showToast(`❌ ${r.error}`, true);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '送出申請';
+    showToast('網路錯誤，請稍後再試', true);
+  }
+}
+
+// 臨時借用（從門口 QR 頁呼叫）
+async function submitTempApply(room) {
+  const name    = document.getElementById('temp-name').value.trim();
+  const email   = document.getElementById('temp-email').value.trim();
+  const phone   = document.getElementById('temp-phone').value.trim();
+  const unit    = document.getElementById('temp-unit').value.trim();
+  const endTime = document.getElementById('temp-end').value;
+  const purpose = document.getElementById('temp-purpose').value.trim();
+
+  if (!name || !email || !phone || !unit || !endTime || !purpose) {
+    showToast('請填寫所有欄位', true); return;
+  }
+
+  const today = toDateString(new Date());
+  const now   = new Date();
+  const startTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes() < 30 ? '00' : '30')}`;
+
+  const btn = document.getElementById('btn-temp-submit');
+  btn.disabled = true; btn.textContent = '送出中…';
+
+  try {
+    const r = await apiPost({
+      action: 'submitBooking', type: '臨時借用',
+      name, email, phone, unit, room,
+      date: today.replace(/-/g,'/'),
+      startTime, endTime, purpose,
+    });
+    btn.disabled = false; btn.textContent = '送出申請';
+
+    if (r.ok) {
+      showToast('臨時申請已送出！院辦確認後請前往借取磁卡');
+      loadRoomStatus(room);
+    } else {
+      showToast(`❌ ${r.error}`, true);
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '送出申請';
+    showToast('網路錯誤', true);
+  }
+}
+
+function validateApplyForm() {
+  let ok = true;
+  const checks = [
+    ['f-name',    'e-name',    v => v.trim().length > 0],
+    ['f-email',   'e-email',   v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
+    ['f-phone',   'e-phone',   v => v.trim().length > 0],
+    ['f-unit',    'e-unit',    v => v.trim().length > 0],
+    ['f-room',    'e-room',    v => v !== ''],
+    ['f-date',    'e-date',    v => v !== ''],
+    ['f-start',   'e-start',   v => v !== ''],
+    ['f-end',     'e-end',     v => v !== ''],
+    ['f-purpose', 'e-purpose', v => v.trim().length > 0],
+  ];
+  checks.forEach(([fid, eid, fn]) => {
+    const el = document.getElementById(fid);
+    const errEl = document.getElementById(eid);
+    if (!fn(el.value)) {
+      el.classList.add('error'); errEl.classList.add('show'); ok = false;
+    } else {
+      el.classList.remove('error'); errEl.classList.remove('show');
+    }
+  });
+  return ok;
+}
+
+function resetApplyForm(keepAlert = false) {
+  ['f-name','f-email','f-phone','f-unit','f-purpose'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['f-room','f-date','f-start','f-end'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('.field-error').forEach(e => e.classList.remove('show'));
+  document.querySelectorAll('input.error, select.error').forEach(e => e.classList.remove('error'));
+  document.getElementById('slot-preview').innerHTML = '<span style="color:var(--gray-400)">請先選擇會議室與日期</span>';
+  if (!keepAlert) document.getElementById('apply-conflict-alert').style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+// 行事曆
+// ══════════════════════════════════════════
+async function loadCalendar() {
+  try {
+    const r = await apiGet({ action: 'getCalendar', year: calYear, month: calMonth });
+    if (r.ok) calEvents = r.events || [];
+    renderCalendar();
+  } catch(e) { renderCalendar(); }
+}
+
+function renderCalendar() {
+  const label = document.getElementById('cal-month-label');
+  label.textContent = `${calYear} 年 ${calMonth} 月`;
+
+  // 星期標題
+  const weekdays = ['日','一','二','三','四','五','六'];
+  document.getElementById('cal-weekdays').innerHTML =
+    weekdays.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth - 1, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+  const today = toDateString(new Date());
+
+  let html = '';
+  // 前補空白
+  const prevDays = new Date(calYear, calMonth - 1, 0).getDate();
+  for (let i = firstDay - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num" style="color:var(--gray-200)">${prevDays - i}</div></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}/${String(calMonth).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+    const dateKey = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateKey === today;
+    const dayEvents = calEvents.filter(e => e.date === dateStr);
+
+    html += `<div class="cal-day${isToday?' today':''}" onclick="showDateDetail('${dateStr}')">`;
+    html += `<div class="cal-day-num">${d}</div>`;
+    dayEvents.slice(0,3).forEach(e => {
+      const roomClass = `cal-event-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}`;
+      html += `<div class="cal-event ${roomClass}">${e.room} ${e.startTime}</div>`;
+    });
+    if (dayEvents.length > 3) html += `<div style="font-size:0.6rem;color:var(--gray-400)">+${dayEvents.length-3} 筆</div>`;
+    html += `</div>`;
+  }
+
+  // 補尾
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= remaining; d++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num" style="color:var(--gray-200)">${d}</div></div>`;
+  }
+
+  document.getElementById('cal-days').innerHTML = html;
+}
+
+function calPrev() {
+  calMonth--;
+  if (calMonth < 1) { calMonth = 12; calYear--; }
+  loadCalendar();
+}
+function calNext() {
+  calMonth++;
+  if (calMonth > 12) { calMonth = 1; calYear++; }
+  loadCalendar();
+}
+
+function showDateDetail(dateStr) {
+  const events = calEvents.filter(e => e.date === dateStr);
+  if (events.length === 0) {
+    showBookingDetailModal(null, dateStr);
+    return;
+  }
+  let html = `<div style="font-weight:600;margin-bottom:10px">${dateStr} 借用情況</div>`;
+  events.forEach(e => {
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100)">
+      <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
+      <span style="font-size:0.85rem">${e.startTime}–${e.endTime}</span>
+      <span style="font-size:0.8rem;color:var(--gray-400)">${e.unit || ''}</span>
+      ${statusBadge(e.status)}
+    </div>`;
+  });
+  document.getElementById('modal-detail-body').innerHTML = html;
+  openModal('modal-detail');
+}
+
+// ══════════════════════════════════════════
+// 借用清單（公開版）
+// ══════════════════════════════════════════
+async function loadList() {
+  const container = document.getElementById('list-container');
+  container.innerHTML = '<div class="loading-center"><div class="spinner"></div>載入中…</div>';
+
+  const room   = document.getElementById('list-filter-room').value;
+  const status = document.getElementById('list-filter-status').value;
+  const date   = document.getElementById('list-filter-date').value;
+
+  try {
+    const params = { action: 'getCalendar', year: calYear, month: calMonth };
+    const r = await apiGet({ action: 'getCalendar', year: new Date().getFullYear(), month: new Date().getMonth()+1 });
+
+    // 公開清單：用行事曆資料（含近期）
+    let events = (r.events || []);
+    if (room)   events = events.filter(e => e.room === room);
+    if (status) events = events.filter(e => e.status === status);
+    if (date)   events = events.filter(e => e.date === date.replace(/-/g,'/'));
+
+    if (events.length === 0) {
+      container.innerHTML = `<div class="empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+        <p>本月尚無借用記錄</p>
+      </div>`;
+      return;
+    }
+
+    events.sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+
+    container.innerHTML = `<div class="booking-list">${events.map(e => `
+      <div class="booking-item">
+        <div class="booking-item-main">
+          <div class="booking-item-title">
+            <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
+            　${e.date}　${e.startTime}–${e.endTime}
+          </div>
+          <div class="booking-item-meta">
+            <span>${e.unit || ''}</span>
+            <span style="color:var(--gray-200)">|</span>
+            <span>${e.purpose || ''}</span>
+            ${e.type === '臨時借用' ? '<span class="badge badge-temp">臨時</span>' : ''}
+          </div>
+        </div>
+        <div class="booking-item-right">${statusBadge(e.status)}</div>
+      </div>
+    `).join('')}</div>`;
+  } catch(e) {
+    container.innerHTML = '<div class="empty"><p>載入失敗，請稍後再試</p></div>';
+  }
+}
+
+function clearListFilter() {
+  document.getElementById('list-filter-room').value = '';
+  document.getElementById('list-filter-status').value = '';
+  document.getElementById('list-filter-date').value = '';
+  loadList();
+}
+
+// ══════════════════════════════════════════
+// 我的申請
+// ══════════════════════════════════════════
+async function loadMyBookings() {
+  const email = document.getElementById('mybook-email').value.trim();
+  if (!email) { showToast('請輸入 Email', true); return; }
+
+  const result = document.getElementById('mybook-result');
+  result.innerHTML = '<div class="loading-center"><div class="spinner"></div>查詢中…</div>';
+
+  try {
+    const r = await apiGet({ action: 'getMyBookings', email });
+    if (!r.ok) { result.innerHTML = `<div class="empty"><p>${r.error}</p></div>`; return; }
+
+    if (r.bookings.length === 0) {
+      result.innerHTML = '<div class="empty"><p>此 Email 尚無申請記錄</p></div>';
+      return;
+    }
+
+    result.innerHTML = `<div class="booking-list">${r.bookings.map(b => `
+      <div class="booking-item${b.hasConflict?' conflict':''}">
+        <div class="booking-item-main">
+          <div class="booking-item-title">
+            <span class="room-tag room-${b.room.replace(/[^a-zA-Z0-9-]/g,'')}">${b.room}</span>
+            　${b.date}　${b.startTime}–${b.endTime}
+          </div>
+          <div class="booking-item-meta">
+            <span style="color:var(--gray-400)">申請編號：${b.id}</span>
+            ${b.hasConflict ? '<span class="badge badge-conflict">⚠ 有衝突</span>' : ''}
+            ${b.type === '臨時借用' ? '<span class="badge badge-temp">臨時</span>' : ''}
+          </div>
+          <div class="booking-item-meta">${b.purpose}</div>
+          ${b.status === '已拒絕' && b.rejectReason ?
+            `<div style="font-size:0.78rem;color:var(--red);margin-top:3px">拒絕理由：${b.rejectReason}</div>` : ''}
+        </div>
+        <div class="booking-item-right">${statusBadge(b.status)}</div>
+      </div>
+    `).join('')}</div>`;
+  } catch(e) {
+    result.innerHTML = '<div class="empty"><p>查詢失敗，請稍後再試</p></div>';
+  }
+}
+
+// ══════════════════════════════════════════
+// 門口 QR 狀態頁
+// ══════════════════════════════════════════
+async function loadRoomStatus(room) {
+  if (!room) {
+    document.getElementById('room-content').innerHTML =
+      '<div class="empty"><p>無效的會議室</p></div>';
+    return;
+  }
+
+  try {
+    const r = await apiGet({ action: 'getRoomStatus', room });
+    if (!r.ok) throw new Error(r.error);
+
+    const roomColors = { 'F1023': 'var(--room-f1023)', 'F1024': 'var(--room-f1024)', 'F809-1': 'var(--room-f8091)' };
+    const color = roomColors[room] || 'var(--blue)';
+
+    // 今日時段 timeline
+    const bookingsHTML = r.todayBookings.length > 0 ? r.todayBookings.map(b => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+        <div style="font-size:0.85rem;font-weight:500;min-width:110px">${b.startTime} – ${b.endTime}</div>
+        <div style="font-size:0.82rem;color:var(--gray-600)">${b.unit || ''}</div>
+        ${b.type === '臨時借用' ? '<span class="badge badge-temp">臨時</span>' : ''}
+      </div>
+    `).join('') : '<div style="font-size:0.85rem;color:var(--gray-400);padding:8px 0">今日尚無借用排程</div>';
+
+    // 今日結束時間選單（給臨時借用）
+    const endOpts = [];
+    const nowH = new Date().getHours();
+    const nowM = new Date().getMinutes();
+    for (let h = nowH; h <= 21; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        if (h === nowH && m <= nowM) continue;
+        const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        endOpts.push(`<option value="${t}">${t}</option>`);
+      }
+    }
+
+    document.getElementById('room-content').innerHTML = `
+      <div class="room-hero" style="background:${color}">
+        <div class="room-hero-name">${r.displayName}</div>
+        <div class="room-hero-sub">容納人數：${r.capacity} 人 ｜ ${r.today}</div>
+        <div class="room-status-label">
+          <span class="room-status-dot ${r.isOccupied ? 'status-busy' : 'status-free'}"></span>
+          ${r.isOccupied ? '目前使用中' : '目前空閒'}
+          ${r.keyBorrowed ? '｜磁卡已借出' : ''}
+        </div>
+      </div>
+
+      ${r.currentBooking ? `
+      <div class="card" style="border-left:3px solid ${color}">
+        <div class="card-title">目前借用中</div>
+        <div style="font-size:0.9rem">${r.currentBooking.startTime} – ${r.currentBooking.endTime}</div>
+        <div style="font-size:0.8rem;color:var(--gray-600);margin-top:4px">${r.currentBooking.unit || ''}</div>
+      </div>` : ''}
+
+      <div class="card">
+        <div class="card-title">今日借用時段</div>
+        ${bookingsHTML}
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.85rem">
+          ⚡ 臨時借用申請
+        </div>
+        <div style="font-size:0.8rem;color:var(--gray-600);margin-bottom:0.85rem">
+          送出後需等候院辦審核，審核通過才能至院辦借磁卡
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>姓名<span class="req">*</span></label>
+            <input type="text" id="temp-name" placeholder="請輸入姓名"></div>
+          <div class="field"><label>單位<span class="req">*</span></label>
+            <input type="text" id="temp-unit" placeholder="系所或單位"></div>
+          <div class="field"><label>Email<span class="req">*</span></label>
+            <input type="email" id="temp-email" placeholder="your@email.com"></div>
+          <div class="field"><label>手機<span class="req">*</span></label>
+            <input type="tel" id="temp-phone" placeholder="09xx-xxx-xxx"></div>
+          <div class="field"><label>預計使用到<span class="req">*</span></label>
+            <select id="temp-end">
+              <option value="">請選擇結束時間</option>
+              ${endOpts.join('')}
+            </select>
+          </div>
+          <div class="field span2"><label>用途說明<span class="req">*</span></label>
+            <textarea id="temp-purpose" rows="2" placeholder="請簡述借用用途"></textarea>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:0.9rem" id="btn-temp-submit"
+          onclick="submitTempApply('${room}')">
+          送出臨時申請
+        </button>
+      </div>
+
+      <div style="text-align:center;margin-top:0.5rem">
+        <button class="btn btn-ghost btn-sm" onclick="showPage('apply')">一般預約申請</button>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('calendar')">查看行事曆</button>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('room-content').innerHTML =
+      '<div class="empty"><p>載入失敗，請稍後再試</p></div>';
+  }
+}
+
+// ══════════════════════════════════════════
+// 磁卡借還頁（院辦電腦用）
+// ══════════════════════════════════════════
+async function loadKeyOp(room) {
+  if (!adminEmail) {
+    document.getElementById('keyop-content').innerHTML = `
+      <div class="login-wrap">
+        <div class="login-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <div class="login-title">磁卡操作</div>
+        <div class="login-sub">需要管理員身分才能操作磁卡借還</div>
+        <button class="btn btn-primary btn-full" onclick="showAdminLogin()">管理員登入</button>
+      </div>`;
+    return;
+  }
+  if (!room) { document.getElementById('keyop-content').innerHTML = '<div class="empty"><p>無效的會議室</p></div>'; return; }
+
+  const roomColors = { 'F1023': 'var(--room-f1023)', 'F1024': 'var(--room-f1024)', 'F809-1': 'var(--room-f8091)' };
+  const color = roomColors[room] || 'var(--blue)';
+
+  document.getElementById('keyop-content').innerHTML = '<div class="loading-center"><div class="spinner"></div>載入中…</div>';
+
+  try {
+    // 取得當前核准且未借卡的申請
+    const r = await apiGet({
+      action: 'getAllBookings',
+      adminEmail, token: adminToken,
+      room, status: '已核准',
+      dateFrom: toDateString(new Date()),
+    });
+
+    if (!r.ok) throw new Error(r.error);
+
+    const today = toDateString(new Date()).replace(/-/g,'/');
+    const pending = (r.bookings || []).filter(b =>
+      b.date === today || b.date >= today
+    ).slice(0, 10);
+
+    // 取得磁卡狀態
+    const kr = await apiGet({ action: 'getKeyLog', adminEmail, token: adminToken, room });
+    const currentKey = (kr.records || []).find(k => k.status === '借出中');
+
+    document.getElementById('keyop-content').innerHTML = `
+      <div class="keyop-room-header" style="background:${color}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        ${room} 磁卡操作
+      </div>
+
+      ${currentKey ? `
+      <div class="card" style="border-left:3px solid var(--amber)">
+        <div class="card-title">🔑 磁卡目前借出中</div>
+        <div style="font-size:0.85rem">借用人：${currentKey.borrower}</div>
+        <div style="font-size:0.82rem;color:var(--gray-600)">借出時間：${currentKey.borrowTime}</div>
+        <div style="font-size:0.82rem;color:var(--gray-600)">申請編號：${currentKey.bookingId}</div>
+        <button class="btn btn-success btn-full" style="margin-top:0.85rem"
+          onclick="doKeyReturn('${currentKey.bookingId}','${room}')">
+          確認歸還
+        </button>
+      </div>` : `
+      <div class="alert alert-success">✅ 磁卡目前在院辦，可借出</div>`}
+
+      <div class="card">
+        <div class="card-title">今日及近期核准申請</div>
+        ${pending.length === 0 ?
+          '<div class="empty" style="padding:1rem"><p>無待借磁卡的申請</p></div>' :
+          pending.map(b => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--gray-100)">
+            <div>
+              <div style="font-size:0.88rem;font-weight:500">${b.name}　${b.date}　${b.startTime}–${b.endTime}</div>
+              <div style="font-size:0.78rem;color:var(--gray-400)">${b.id}　${b.unit}</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="doKeyBorrow('${b.id}','${room}')">借出</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('keyop-content').innerHTML = '<div class="empty"><p>載入失敗</p></div>';
+  }
+}
+
+async function doKeyBorrow(bookingId, room) {
+  if (!confirm(`確認借出 ${room} 磁卡？`)) return;
+  try {
+    const r = await apiPost({ action: 'keyBorrow', bookingId, room, adminEmail, token: adminToken });
+    if (r.ok) { showToast('磁卡借出完成'); loadKeyOp(room); }
+    else showToast(`❌ ${r.error}`, true);
+  } catch(e) { showToast('操作失敗', true); }
+}
+
+async function doKeyReturn(bookingId, room) {
+  if (!confirm(`確認 ${room} 磁卡歸還？`)) return;
+  try {
+    const r = await apiPost({ action: 'keyReturn', bookingId, room, adminEmail, token: adminToken });
+    if (r.ok) { showToast('磁卡歸還完成'); loadKeyOp(room); }
+    else showToast(`❌ ${r.error}`, true);
+  } catch(e) { showToast('操作失敗', true); }
+}
+
+// ══════════════════════════════════════════
+// 管理後台
+// ══════════════════════════════════════════
+async function loadAdmin() {
+  if (!adminEmail) { showAdminLoginPage(); return; }
+
+  const container = document.getElementById('admin-content');
+  container.innerHTML = '<div class="loading-center"><div class="spinner"></div>載入中…</div>';
+
+  try {
+    const r = await apiGet({
+      action: 'getAllBookings', adminEmail, token: adminToken,
+      status: document.getElementById('admin-filter-status')?.value || '',
+      room:   document.getElementById('admin-filter-room')?.value   || '',
+    });
+
+    if (!r.ok) { showAdminLoginPage(); return; }
+
+    const bookings = r.bookings || [];
+    const pending  = bookings.filter(b => b.status === '待審核');
+
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:600;font-size:0.95rem">管理後台
+          ${pending.length > 0 ? `<span class="badge badge-pending" style="margin-left:8px">${pending.length} 待審核</span>` : ''}
+        </div>
+        <div style="font-size:0.8rem;color:var(--gray-400)">登入：${adminEmail}</div>
+      </div>
+
+      <div class="filter-bar">
+        <select id="admin-filter-status" onchange="loadAdmin()">
+          <option value="">全部狀態</option>
+          <option value="待審核">待審核</option>
+          <option value="已核准">已核准</option>
+          <option value="已拒絕">已拒絕</option>
+        </select>
+        <select id="admin-filter-room" onchange="loadAdmin()">
+          <option value="">全部會議室</option>
+          <option value="F1023">F1023</option>
+          <option value="F1024">F1024</option>
+          <option value="F809-1">F809-1</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="loadAdmin()">🔄 重新整理</button>
+        <button class="btn btn-ghost btn-sm" onclick="showQrPage()">📱 QR Code</button>
+      </div>
+
+      ${bookings.length === 0 ? '<div class="empty"><p>目前無申請記錄</p></div>' :
+        `<div class="booking-list">${bookings.map(b => `
+        <div class="booking-item${b.hasConflict?' conflict':''}" onclick="showReviewModal('${b.id}')">
+          <div class="booking-item-main">
+            <div class="booking-item-title">
+              <span class="room-tag room-${b.room.replace(/[^a-zA-Z0-9-]/g,'')}">${b.room}</span>
+              　${b.name}　${b.date}　${b.startTime}–${b.endTime}（${b.hours}h）
+            </div>
+            <div class="booking-item-meta">
+              <span>${b.unit}</span>
+              <span style="color:var(--gray-200)">|</span>
+              <span>${b.email}</span>
+              <span style="color:var(--gray-200)">|</span>
+              <span>${b.phone}</span>
+              ${b.type === '臨時借用' ? '<span class="badge badge-temp">⚡ 臨時</span>' : ''}
+              ${b.hasConflict ? '<span class="badge badge-conflict">⚠ 衝突</span>' : ''}
+            </div>
+            <div class="booking-item-meta" style="color:var(--gray-400)">${b.purpose}</div>
+          </div>
+          <div class="booking-item-right">
+            ${statusBadge(b.status)}
+            <span style="font-size:0.72rem;color:var(--gray-400)">${b.applyTime.substring(0,10)}</span>
+          </div>
+        </div>
+      `).join('')}</div>`}
+    `;
+  } catch(e) {
+    container.innerHTML = '<div class="empty"><p>載入失敗</p></div>';
+  }
+}
+
+async function showReviewModal(bookingId) {
+  currentReviewId = bookingId;
+  try {
+    const r = await apiGet({ action: 'getBooking', id: bookingId, adminEmail, token: adminToken });
+    if (!r.ok) { showToast('無法取得資料', true); return; }
+
+    const b = r.booking;
+    const k = r.keyRecord;
+
+    document.getElementById('modal-review-title').textContent = `審核：${b.id}`;
+    document.getElementById('modal-review-body').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:0.875rem">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="room-tag room-${b.room.replace(/[^a-zA-Z0-9-]/g,'')}">${b.room}</span>
+          ${statusBadge(b.status)}
+          ${b.type === '臨時借用' ? '<span class="badge badge-temp">⚡ 臨時</span>' : ''}
+          ${b.hasConflict ? '<span class="badge badge-conflict">⚠ 時段有衝突</span>' : ''}
+        </div>
+        ${b.hasConflict ? `<div class="alert alert-warning">⚠️ 衝突說明：${b.conflictNote}</div>` : ''}
+        <table style="width:100%;font-size:0.82rem;border-collapse:collapse">
+          ${[
+            ['申請人', b.name], ['單位', b.unit],
+            ['Email', b.email], ['手機', b.phone],
+            ['借用日期', b.date], ['時段', `${b.startTime} – ${b.endTime}（${b.hours} 小時）`],
+            ['用途', b.purpose], ['申請時間', b.applyTime],
+          ].map(([l,v]) => `
+            <tr>
+              <td style="padding:5px 8px 5px 0;color:var(--gray-400);white-space:nowrap;width:70px">${l}</td>
+              <td style="padding:5px 0;color:var(--gray-800)">${v || '—'}</td>
+            </tr>
+          `).join('')}
+        </table>
+        ${k ? `<div style="padding:8px;background:var(--gray-50);border-radius:6px;font-size:0.8rem">
+          🔑 磁卡狀態：${k.status}
+          ${k.borrowTime ? `｜借出：${k.borrowTime}` : ''}
+          ${k.returnTime ? `｜歸還：${k.returnTime}（${k.duration} 分鐘）` : ''}
+        </div>` : ''}
+        ${b.status === '待審核' ? `
+        <div class="field">
+          <label>拒絕理由（選填）</label>
+          <textarea id="reject-reason" rows="2" placeholder="請填寫拒絕理由（核准時可留空）"></textarea>
+        </div>` : `
+        ${b.status === '已拒絕' && b.rejectReason ? `<div class="alert alert-error">拒絕理由：${b.rejectReason}</div>` : ''}
+        `}
+      </div>
+    `;
+
+    const showActions = b.status === '待審核';
+    document.getElementById('modal-reject-btn').style.display  = showActions ? '' : 'none';
+    document.getElementById('modal-approve-btn').style.display = showActions ? '' : 'none';
+
+    openModal('modal-review');
+  } catch(e) { showToast('無法取得資料', true); }
+}
+
+async function doApprove() {
+  const r = await apiPost({
+    action: 'reviewBooking', bookingId: currentReviewId,
+    decision: '核准', adminEmail, token: adminToken,
+  });
+  if (r.ok) { closeModal('modal-review'); showToast('已核准申請'); loadAdmin(); }
+  else showToast(`❌ ${r.error}`, true);
+}
+
+async function doReject() {
+  const reason = document.getElementById('reject-reason')?.value || '';
+  const r = await apiPost({
+    action: 'reviewBooking', bookingId: currentReviewId,
+    decision: '拒絕', reason, adminEmail, token: adminToken,
+  });
+  if (r.ok) { closeModal('modal-review'); showToast('已拒絕申請'); loadAdmin(); }
+  else showToast(`❌ ${r.error}`, true);
+}
+
+// ══════════════════════════════════════════
+// 使用率報表
+// ══════════════════════════════════════════
+async function loadReport() {
+  if (!adminEmail) { document.getElementById('report-content').innerHTML = '<div class="empty"><p>請先登入管理員帳號</p></div>'; return; }
+
+  const container = document.getElementById('report-content');
+  container.innerHTML = '<div class="loading-center"><div class="spinner"></div>載入中…</div>';
+
+  try {
+    const r = await apiGet({ action: 'getReport', adminEmail, token: adminToken });
+    if (!r.ok) throw new Error(r.error);
+
+    const months  = r.months || [];
+    const report  = r.report || [];
+    const latest  = months[0] || '';
+
+    const curReport = report.filter(row => row.yearMonth === latest);
+    const roomColors = { 'F1023': 'var(--room-f1023)', 'F1024': 'var(--room-f1024)', 'F809-1': 'var(--room-f8091)' };
+
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:600">使用率報表</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="report-month" onchange="switchReportMonth(this.value)">
+            ${months.map(m => `<option value="${m}" ${m===latest?'selected':''}>${m}</option>`).join('')}
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="triggerReport()">產生本月報表</button>
+        </div>
+      </div>
+
+      ${curReport.length === 0 ? '<div class="empty"><p>此月份尚無報表資料，請先點「產生本月報表」</p></div>' : `
+
+      <div class="report-grid">
+        ${curReport.map(row => `
+          <div class="stat-card" style="border-top:3px solid ${roomColors[row.room]||'var(--blue)'}">
+            <div class="stat-label">${row.room}</div>
+            <div class="stat-value">${row.rate}</div>
+            <div class="stat-sub">使用率</div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width:${parseFloat(row.rate)||0}%;background:${roomColors[row.room]||'var(--blue)'}"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${curReport.map(row => `
+      <div class="card" style="border-left:3px solid ${roomColors[row.room]||'var(--blue)'}">
+        <div class="card-title">${row.room} 詳細數據</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          ${[
+            ['借用次數', `${row.approved} / ${row.total} 件`, '核准 / 總申請'],
+            ['總使用時數', `${row.usedHours} h`, `可用 ${row.availHours} h`],
+            ['平均每次', `${row.avgHours} h`, '小時/次'],
+            ['拒絕件數', `${row.rejected} 件`, ''],
+            ['臨時借用', `${row.temp} 次`, ''],
+            ['尖峰時段', row.peakHour, ''],
+            ['最常借用單位', row.topUnit, ''],
+          ].map(([l,v,s]) => `
+            <div>
+              <div class="stat-label">${l}</div>
+              <div style="font-size:1rem;font-weight:600;color:var(--gray-800)">${v}</div>
+              ${s ? `<div class="stat-sub">${s}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      `).join('')}
+      `}
+    `;
+  } catch(e) {
+    container.innerHTML = '<div class="empty"><p>載入失敗</p></div>';
+  }
+}
+
+async function switchReportMonth(ym) {
+  if (!adminEmail) return;
+  const container = document.getElementById('report-content');
+  try {
+    const r = await apiGet({ action: 'getReport', adminEmail, token: adminToken, yearMonth: ym });
+    // 重新渲染（簡化：直接重載）
+    loadReport();
+  } catch(e) {}
+}
+
+async function triggerReport() {
+  if (!confirm('確認產生本月使用率報表並寄送 Email？')) return;
+  try {
+    const r = await apiPost({ action: 'triggerReport', adminEmail, token: adminToken });
+    if (r.ok) { showToast('報表已產生並寄出'); setTimeout(loadReport, 1500); }
+    else showToast(`❌ ${r.error}`, true);
+  } catch(e) { showToast('操作失敗', true); }
+}
+
+// ══════════════════════════════════════════
+// QR Code 頁
+// ══════════════════════════════════════════
+async function showQrPage() {
+  try {
+    const r = await apiGet({ action: 'getQrUrls', adminEmail, token: adminToken });
+    if (!r.ok) { showToast(r.error, true); return; }
+
+    let html = '<div style="font-weight:600;margin-bottom:12px">掃碼列印</div>';
+    html += '<div style="font-size:0.85rem;font-weight:500;color:var(--gray-600);margin-bottom:8px">🚪 門口 QR Code（貼門口）</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">';
+    r.roomDoor.forEach(d => {
+      html += `<div style="text-align:center">
+        <img src="${d.qr}" style="width:100%;max-width:120px;border:1px solid var(--gray-200);border-radius:8px">
+        <div style="font-size:0.78rem;font-weight:600;margin-top:5px">${d.name}</div>
+      </div>`;
+    });
+    html += '</div>';
+    html += '<div style="font-size:0.85rem;font-weight:500;color:var(--gray-600);margin-bottom:8px">🔑 磁卡 QR Code（貼磁卡）</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">';
+    r.keyCard.forEach(d => {
+      html += `<div style="text-align:center">
+        <img src="${d.qr}" style="width:100%;max-width:120px;border:1px solid var(--gray-200);border-radius:8px">
+        <div style="font-size:0.78rem;font-weight:600;margin-top:5px">${d.name}</div>
+      </div>`;
+    });
+    html += '</div><div style="font-size:0.75rem;color:var(--gray-400);margin-top:10px">列印後裁切貼上即可使用</div>';
+
+    document.getElementById('modal-detail-body').innerHTML = html;
+    openModal('modal-detail');
+  } catch(e) { showToast('無法取得 QR Code', true); }
+}
+
+// ══════════════════════════════════════════
+// 管理員登入
+// ══════════════════════════════════════════
+function showAdminLogin() {
+  document.getElementById('modal-key-title').textContent = '管理員登入';
+  document.getElementById('modal-key-body').innerHTML = `
+    <div style="font-size:0.85rem;color:var(--gray-600);margin-bottom:12px">
+      請使用院辦 Google 帳號登入
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Google Email</label>
+      <input type="email" id="login-email" placeholder="secretary@ntunhs.edu.tw"
+        onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <div class="alert alert-info" style="font-size:0.8rem">
+      系統將驗證您的 Email 是否在管理員名單中
+    </div>
+  `;
+  document.getElementById('modal-key-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal('modal-key')">取消</button>
+    <button class="btn btn-primary" onclick="doAdminLogin()">驗證登入</button>
+  `;
+  openModal('modal-key');
+}
+
+async function doAdminLogin() {
+  const email = document.getElementById('login-email')?.value.trim();
+  if (!email) { showToast('請輸入 Email', true); return; }
+
+  try {
+    // 呼叫 GAS 取得 token（需要先在 GAS 加一個 getToken action）
+    const r = await apiGet({ action: 'getToken', email });
+    if (r.ok && r.token) {
+      adminEmail = email;
+      adminToken = r.token;
+      sessionStorage.setItem('adminEmail', email);
+      sessionStorage.setItem('adminToken', r.token);
+      setAdminUI(true);
+      closeModal('modal-key');
+      showToast(`✅ 歡迎，${email}`);
+      showPage('admin');
+    } else {
+      showToast('❌ 此 Email 不在管理員名單中', true);
+    }
+  } catch(e) { showToast('登入失敗，請稍後再試', true); }
+}
+
+function showAdminLoginPage() {
+  document.getElementById('admin-content').innerHTML = `
+    <div class="login-wrap">
+      <div class="login-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+      </div>
+      <div class="login-title">管理後台</div>
+      <div class="login-sub">請使用院辦 Google 帳號登入</div>
+      <button class="btn btn-primary btn-full" onclick="showAdminLogin()">登入管理後台</button>
+    </div>`;
+}
+
+function adminLogout() {
+  adminEmail = ''; adminToken = '';
+  sessionStorage.removeItem('adminEmail');
+  sessionStorage.removeItem('adminToken');
+  setAdminUI(false);
+  showToast('已登出');
+  showPage('apply');
+}
+
+function setAdminUI(isAdmin) {
+  document.getElementById('btn-admin-login').style.display = isAdmin ? 'none' : '';
+  document.getElementById('btn-admin-out').style.display   = isAdmin ? '' : 'none';
+  document.querySelectorAll('.admin-tab').forEach(t => {
+    t.style.display = isAdmin ? '' : 'none';
+  });
+}
+
+// ══════════════════════════════════════════
+// 工具函式
+// ══════════════════════════════════════════
+function statusBadge(status) {
+  const map = {
+    '待審核': 'badge-pending',
+    '已核准': 'badge-approved',
+    '已拒絕': 'badge-rejected',
+    '借出中': 'badge-borrowed',
+    '已歸還': 'badge-returned',
+  };
+  return `<span class="badge ${map[status]||'badge-pending'}">${status}</span>`;
+}
+
+function toDateString(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+let toastTimer;
+function showToast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? 'var(--red)' : 'var(--gray-800)';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function showBookingDetailModal(booking, dateStr) {
+  document.getElementById('modal-detail-body').innerHTML =
+    `<div style="text-align:center;color:var(--gray-400);padding:1rem">${dateStr}<br>此日無借用記錄</div>`;
+  openModal('modal-detail');
+}
+
+// 點 overlay 關閉 modal
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ══════════════════════════════════════════
+// 啟動
+// ══════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
