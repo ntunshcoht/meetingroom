@@ -1151,7 +1151,8 @@ function renderCalendar() {
     html += `<div class="cal-day-num">${d}</div>`;
     dayEvents.slice(0,3).forEach(e => {
       const roomClass = `cal-event-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}`;
-      html += `<div class="cal-event ${roomClass}">${e.room} ${e.startTime}</div>`;
+      const keyIcon = e.keyStatus === '借出中' ? ' 🔑' : (e.keyStatus === '已歸還' ? ' ✅' : '');
+      html += `<div class="cal-event ${roomClass}">${e.room} ${e.startTime}${keyIcon}</div>`;
     });
     if (dayEvents.length > 3) html += `<div style="font-size:0.6rem;color:var(--gray-400)">+${dayEvents.length-3} 筆</div>`;
     html += `</div>`;
@@ -1186,11 +1187,14 @@ function showDateDetail(dateStr) {
   }
   let html = `<div style="font-weight:600;margin-bottom:10px">${dateStr} 借用情況</div>`;
   events.forEach(e => {
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100)">
-      <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
-      <span style="font-size:0.85rem">${e.startTime}–${e.endTime}</span>
-      <span style="font-size:0.8rem;color:var(--gray-400)">${e.unit || ''}</span>
-      ${statusBadge(e.status)}
+    html += `<div style="padding:7px 0;border-bottom:1px solid var(--gray-100)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+        <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
+        <span style="font-size:0.85rem">${e.startTime}–${e.endTime}</span>
+        <span style="font-size:0.8rem;color:var(--gray-400)">${e.unit || ''}</span>
+        ${statusBadge(e.status)}
+      </div>
+      ${e.keyStatus ? keyBadge(e.keyStatus, e.borrowTime, e.returnTime) : ''}
     </div>`;
   });
   document.getElementById('modal-detail-body').innerHTML = html;
@@ -1241,6 +1245,7 @@ async function loadList() {
             <span>${e.purpose || ''}</span>
             ${e.type === '臨時借用' ? '<span class="badge badge-temp">臨時</span>' : ''}
           </div>
+          ${e.keyStatus ? `<div style="margin-top:4px">${keyBadge(e.keyStatus, e.borrowTime, e.returnTime)}</div>` : ''}
         </div>
         <div class="booking-item-right">${statusBadge(e.status)}</div>
       </div>
@@ -1619,10 +1624,30 @@ async function showReviewModal(bookingId) {
             </tr>
           `).join('')}
         </table>
-        ${k ? `<div style="padding:8px;background:var(--gray-50);border-radius:6px;font-size:0.8rem">
-          🔑 磁卡狀態：${k.status}
-          ${k.borrowTime ? `｜借出：${k.borrowTime}` : ''}
-          ${k.returnTime ? `｜歸還：${k.returnTime}（${k.duration} 分鐘）` : ''}
+        ${b.status === '已核准' ? `
+        <div style="background:var(--gray-50);border-radius:8px;padding:10px 12px;font-size:0.82rem">
+          <div style="font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            🔑 磁卡狀態
+          </div>
+          ${k && k.status === '借出中' ? `
+            <div style="color:var(--amber);margin-bottom:8px">
+              借出中　${k.borrowTime || ''}
+            </div>
+            <button class="btn btn-success btn-sm btn-full"
+              onclick="doKeyReturnFromModal('${b.id}','${b.room}')">
+              ✅ 確認歸還磁卡
+            </button>
+          ` : k && k.status === '已歸還' ? `
+            <div style="color:var(--green)">
+              ✅ 已歸還　${k.returnTime || ''}（共 ${k.duration} 分鐘）
+            </div>
+          ` : `
+            <div style="color:var(--gray-400);margin-bottom:8px">尚未借出</div>
+            <button class="btn btn-primary btn-sm btn-full"
+              onclick="doKeyBorrowFromModal('${b.id}','${b.room}')">
+              🔑 確認借出磁卡
+            </button>
+          `}
         </div>` : ''}
         ${b.status === '待審核' ? `
         <div class="field">
@@ -1659,6 +1684,30 @@ async function doReject() {
   });
   if (r.ok) { closeModal('modal-review'); showToast('已拒絕申請'); loadAdmin(); }
   else showToast(`❌ ${r.error}`, true);
+}
+
+// 從管理後台 modal 借出磁卡
+async function doKeyBorrowFromModal(bookingId, room) {
+  if (!confirm(`確認借出 ${room} 磁卡？`)) return;
+  const r = await apiGet({ action: 'keyBorrow', bookingId, room, adminEmail, token: adminToken });
+  if (r.ok) {
+    showToast('✅ 磁卡借出完成');
+    closeModal('modal-review');
+    showReviewModal(bookingId); // 重新開啟更新狀態
+    loadAdmin();
+  } else showToast(`❌ ${r.error}`, true);
+}
+
+// 從管理後台 modal 歸還磁卡
+async function doKeyReturnFromModal(bookingId, room) {
+  if (!confirm(`確認 ${room} 磁卡歸還？`)) return;
+  const r = await apiGet({ action: 'keyReturn', bookingId, room, adminEmail, token: adminToken });
+  if (r.ok) {
+    showToast('✅ 磁卡歸還完成');
+    closeModal('modal-review');
+    showReviewModal(bookingId);
+    loadAdmin();
+  } else showToast(`❌ ${r.error}`, true);
 }
 
 // ══════════════════════════════════════════
@@ -1887,6 +1936,22 @@ function statusBadge(status) {
     '已歸還': 'badge-returned',
   };
   return `<span class="badge ${map[status]||'badge-pending'}">${status}</span>`;
+}
+
+// 磁卡狀態 badge
+function keyBadge(keyStatus, borrowTime, returnTime) {
+  if (!keyStatus) return '';
+  if (keyStatus === '借出中') {
+    return `<span class="badge" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">
+      🔑 磁卡借出中${borrowTime ? '　' + borrowTime.substring(5,16) : ''}
+    </span>`;
+  }
+  if (keyStatus === '已歸還') {
+    return `<span class="badge" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">
+      ✅ 已歸還${returnTime ? '　' + returnTime.substring(5,16) : ''}
+    </span>`;
+  }
+  return '';
 }
 
 function toDateString(d) {
