@@ -1686,7 +1686,9 @@ async function loadReport() {
         <div style="font-weight:600">使用率報表</div>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="report-month" onchange="switchReportMonth(this.value)">
-            ${months.map(m => `<option value="${m}" ${m===latest?'selected':''}>${m}</option>`).join('')}
+            ${months.length === 0
+              ? '<option value="">尚無報表資料</option>'
+              : months.map(m => `<option value="${m}" ${m===latest?'selected':''}>${m}</option>`).join('')}
           </select>
           <button class="btn btn-ghost btn-sm" onclick="triggerReport()">產生本月報表</button>
         </div>
