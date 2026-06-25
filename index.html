@@ -1855,12 +1855,12 @@ function showAdminLogin() {
       請登入
     </div>
     <div class="field" style="margin-bottom:10px">
-      <label>Google Email</label>
-      <input type="email" id="login-email" placeholder="secretary@ntunhs.edu.tw"
+      <label>請輸入管理員帳號</label>
+      <input type="email" id="login-email" placeholder="輸入管理員帳號"
         onkeydown="if(event.key==='Enter')doAdminLogin()">
     </div>
     <div class="alert alert-info" style="font-size:0.8rem">
-      系統將驗證您的 Email 是否在管理員名單中
+      系統將驗證您的帳號是否在管理員名單中
     </div>
   `;
   document.getElementById('modal-key-footer').innerHTML = `
