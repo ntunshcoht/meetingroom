@@ -643,12 +643,27 @@ textarea { resize: vertical; min-height: 72px; }
               <div id="repeat-weekly" style="margin-bottom:0.75rem">
                 <label style="font-size:0.8rem;color:var(--gray-600);display:block;margin-bottom:6px">選擇星期</label>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
-                  ${['日','一','二','三','四','五','六'].map((d,i) =>
-                    `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
-                      <input type="checkbox" class="repeat-dow" value="${i}" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">
-                      ${d}
-                    </label>`
-                  ).join('')}
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="0" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">日
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="1" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">一
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="2" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">二
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="3" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">三
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="4" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">四
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="5" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">五
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                    <input type="checkbox" class="repeat-dow" value="6" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">六
+                  </label>
                 </div>
               </div>
 
