@@ -1361,19 +1361,27 @@ function calNext() {
 function showDateDetail(dateStr) {
   const events = calEvents.filter(e => e.date === dateStr);
   if (events.length === 0) {
-    showBookingDetailModal(null, dateStr);
+    document.getElementById('modal-detail-body').innerHTML =
+      `<div style="text-align:center;color:var(--gray-400);padding:1rem">${dateStr}<br>此日無借用記錄</div>`;
+    openModal('modal-detail');
     return;
   }
+  // 存入快取，供點擊個別事件切換到詳情用
+  listCache = events;
+
   let html = `<div style="font-weight:600;margin-bottom:10px">${dateStr} 借用情況</div>`;
-  events.forEach(e => {
-    html += `<div style="padding:7px 0;border-bottom:1px solid var(--gray-100)">
+  events.forEach((e,i) => {
+    html += `<div style="padding:8px 6px;border-bottom:1px solid var(--gray-100);cursor:pointer;border-radius:6px"
+      onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background='transparent'"
+      onclick="showListItemDetail(${i})">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
         <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
         <span style="font-size:0.85rem">${e.startTime}–${e.endTime}</span>
         <span style="font-size:0.8rem;color:var(--gray-400)">${e.unit || ''}</span>
         ${statusBadge(e.status)}
       </div>
-      ${e.keyStatus ? keyBadge(e.keyStatus, e.borrowTime, e.returnTime) : ''}
+      ${e.purpose ? `<div style="font-size:0.8rem;color:var(--gray-600)">${e.purpose}</div>` : ''}
+      ${e.keyStatus ? `<div style="margin-top:3px">${keyBadge(e.keyStatus, e.borrowTime, e.returnTime)}</div>` : ''}
     </div>`;
   });
   document.getElementById('modal-detail-body').innerHTML = html;
@@ -1411,8 +1419,11 @@ async function loadList() {
       return;
     }
 
-    container.innerHTML = `<div class="booking-list">${events.map(e => `
-      <div class="booking-item">
+    // 快取本次清單資料，供點擊詳情使用
+    listCache = events;
+
+    container.innerHTML = `<div class="booking-list">${events.map((e,i) => `
+      <div class="booking-item" onclick="showListItemDetail(${i})">
         <div class="booking-item-main">
           <div class="booking-item-title">
             <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
@@ -1432,6 +1443,38 @@ async function loadList() {
   } catch(e) {
     container.innerHTML = '<div class="empty"><p>載入失敗，請稍後再試</p></div>';
   }
+}
+
+let listCache = [];
+
+// 借用清單：點擊單筆顯示詳情
+function showListItemDetail(index) {
+  const e = listCache[index];
+  if (!e) return;
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:0.875rem">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="room-tag room-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}">${e.room}</span>
+        ${statusBadge(e.status)}
+        ${e.type === '臨時借用' ? '<span class="badge badge-temp">⚡ 臨時</span>' : ''}
+      </div>
+      <table style="width:100%;font-size:0.85rem;border-collapse:collapse">
+        ${[
+          ['單位', e.unit || '—'],
+          ['日期', e.date],
+          ['時段', `${e.startTime} – ${e.endTime}（${e.hours} 小時）`],
+          ['用途', e.purpose || '—'],
+        ].map(([l,v]) => `
+          <tr>
+            <td style="padding:5px 8px 5px 0;color:var(--gray-400);white-space:nowrap;width:64px">${l}</td>
+            <td style="padding:5px 0;color:var(--gray-800)">${v}</td>
+          </tr>
+        `).join('')}
+      </table>
+      ${e.keyStatus ? `<div style="padding:8px;background:var(--gray-50);border-radius:8px">${keyBadge(e.keyStatus, e.borrowTime, e.returnTime)}</div>` : ''}
+    </div>
+  `;
+  openModal('modal-detail');
 }
 
 function clearListFilter() {
