@@ -615,6 +615,57 @@ textarea { resize: vertical; min-height: 72px; }
             <textarea id="f-purpose" placeholder="請簡述借用用途（如：系務會議、研究討論…）" rows="3"></textarea>
             <span class="field-error" id="e-purpose">請填寫借用用途</span>
           </div>
+
+          <!-- 重複借用 -->
+          <div class="field span2">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="f-repeat" onchange="toggleRepeat()" style="width:16px;height:16px;margin:0">
+              重複借用（同時段不同日期）
+            </label>
+          </div>
+          <div id="repeat-options" style="display:none;grid-column:1/-1">
+            <div style="background:var(--blue-pale);border:1px solid var(--blue-light);border-radius:var(--radius-md);padding:1rem">
+              <div class="form-grid" style="margin-bottom:0.75rem">
+                <div class="field">
+                  <label>重複方式</label>
+                  <select id="f-repeat-type" onchange="updateRepeatPreview()">
+                    <option value="weekly">每週（選擇星期幾）</option>
+                    <option value="custom">自訂日期</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>重複到（結束日期）</label>
+                  <input type="date" id="f-repeat-until" onchange="updateRepeatPreview()">
+                </div>
+              </div>
+
+              <!-- 每週：選星期 -->
+              <div id="repeat-weekly" style="margin-bottom:0.75rem">
+                <label style="font-size:0.8rem;color:var(--gray-600);display:block;margin-bottom:6px">選擇星期</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  ${['日','一','二','三','四','五','六'].map((d,i) =>
+                    `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85rem;padding:4px 10px;border:1px solid var(--gray-200);border-radius:99px;background:white">
+                      <input type="checkbox" class="repeat-dow" value="${i}" onchange="updateRepeatPreview()" style="width:14px;height:14px;margin:0">
+                      ${d}
+                    </label>`
+                  ).join('')}
+                </div>
+              </div>
+
+              <!-- 自訂日期 -->
+              <div id="repeat-custom" style="display:none;margin-bottom:0.75rem">
+                <label style="font-size:0.8rem;color:var(--gray-600);display:block;margin-bottom:6px">選擇日期（可多選）</label>
+                <div id="repeat-custom-dates" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
+                <input type="date" id="f-repeat-add-date" style="font-size:0.82rem;padding:5px 8px">
+                <button class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="addCustomDate()">+ 加入</button>
+              </div>
+
+              <!-- 預覽 -->
+              <div id="repeat-preview" style="font-size:0.8rem;color:var(--gray-600)">
+                請選擇重複設定
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:1.1rem;justify-content:flex-end;flex-wrap:wrap">
@@ -995,7 +1046,7 @@ async function submitApply() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:15px;height:15px;border-width:2px"></div> 送出中…';
 
-  const body = {
+  const baseBody = {
     action:    'submitBooking',
     type:      '一般預約',
     name:      document.getElementById('f-name').value.trim(),
@@ -1009,7 +1060,18 @@ async function submitApply() {
     purpose:   document.getElementById('f-purpose').value.trim(),
   };
 
+  // 收集所有日期（含重複）
+  const useRepeat = document.getElementById('f-repeat').checked;
+  const repeatDates = useRepeat ? getRepeatDates() : [];
+  const allDates = [baseBody.date, ...repeatDates.map(d => d.replace(/-/g,'/'))];
+
   try {
+    // 批次送出：所有日期一次送，只觸發一封 Email
+    const body = Object.assign({}, baseBody, {
+      action: allDates.length > 1 ? 'submitBatchBooking' : 'submitBooking',
+      dates:  allDates.join(','),  // 批次時傳所有日期
+      date:   baseBody.date,       // 單筆時仍用 date
+    });
     const r = await apiGet(body);
     btn.disabled = false;
     btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> 送出申請';
@@ -1017,10 +1079,11 @@ async function submitApply() {
     if (r.ok) {
       const alertDiv = document.getElementById('apply-conflict-alert');
       alertDiv.className = r.hasConflict ? 'alert alert-warning' : 'alert alert-success';
-      alertDiv.innerHTML = `✅ 申請已送出！申請編號：<strong>${r.bookingId}</strong><br>${r.message}`;
+      const countMsg = allDates.length > 1 ? `共送出 <strong>${r.count || allDates.length}</strong> 筆申請，院辦將統一審核後通知您。` : `申請編號：<strong>${r.bookingId}</strong>`;
+      alertDiv.innerHTML = `✅ 申請已送出！${countMsg}<br>${r.message}`;
       alertDiv.style.display = 'flex';
       resetApplyForm(true);
-      showToast('申請已送出，請查收確認 Email');
+      showToast(allDates.length > 1 ? `已送出 ${allDates.length} 筆申請` : '申請已送出，請查收確認 Email');
     } else {
       showToast(`❌ ${r.error}`, true);
     }
@@ -1097,6 +1160,101 @@ function validateApplyForm() {
   return ok;
 }
 
+// ══════════════════════════════════════════
+// 重複借用
+// ══════════════════════════════════════════
+let customDates = [];
+
+function toggleRepeat() {
+  const on = document.getElementById('f-repeat').checked;
+  document.getElementById('repeat-options').style.display = on ? 'block' : 'none';
+  if (on) {
+    // 預設結束日期為一個月後
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    document.getElementById('f-repeat-until').value = d.toISOString().substring(0,10);
+    updateRepeatPreview();
+  }
+}
+
+function updateRepeatPreview() {
+  const type  = document.getElementById('f-repeat-type').value;
+  const until = document.getElementById('f-repeat-until').value;
+  const startDate = document.getElementById('f-date').value;
+
+  document.getElementById('repeat-weekly').style.display = type === 'weekly' ? '' : 'none';
+  document.getElementById('repeat-custom').style.display = type === 'custom' ? '' : 'none';
+
+  if (!startDate || !until || startDate >= until) {
+    document.getElementById('repeat-preview').innerHTML =
+      '<span style="color:var(--red)">請先選擇借用日期與結束日期</span>';
+    return;
+  }
+
+  const dates = getRepeatDates();
+  if (dates.length === 0) {
+    document.getElementById('repeat-preview').textContent = '尚未選擇重複日期';
+    return;
+  }
+  document.getElementById('repeat-preview').innerHTML =
+    `將產生 <strong>${dates.length}</strong> 筆申請：` +
+    dates.slice(0,5).join('、') + (dates.length > 5 ? `… 等` : '');
+}
+
+function getRepeatDates() {
+  const type      = document.getElementById('f-repeat-type').value;
+  const startDate = document.getElementById('f-date').value;
+  const until     = document.getElementById('f-repeat-until').value;
+  if (!startDate || !until) return [];
+
+  const dates = [];
+
+  if (type === 'weekly') {
+    const dows = [...document.querySelectorAll('.repeat-dow:checked')].map(el => parseInt(el.value));
+    if (dows.length === 0) return [];
+    const cur = new Date(startDate);
+    cur.setDate(cur.getDate() + 1); // 從隔天開始（不包含原始日期）
+    const end = new Date(until);
+    while (cur <= end) {
+      if (dows.includes(cur.getDay())) {
+        dates.push(cur.toISOString().substring(0,10));
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+  } else {
+    // 自訂日期（排除原始日期）
+    return customDates.filter(d => d !== startDate).sort();
+  }
+  return dates;
+}
+
+function addCustomDate() {
+  const input = document.getElementById('f-repeat-add-date');
+  const d = input.value;
+  if (!d || customDates.includes(d)) return;
+  customDates.push(d);
+  customDates.sort();
+  renderCustomDates();
+  input.value = '';
+  updateRepeatPreview();
+}
+
+function removeCustomDate(d) {
+  customDates = customDates.filter(x => x !== d);
+  renderCustomDates();
+  updateRepeatPreview();
+}
+
+function renderCustomDates() {
+  document.getElementById('repeat-custom-dates').innerHTML = customDates.map(d =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--blue);color:white;
+      font-size:0.75rem;padding:3px 8px;border-radius:99px">
+      ${d}
+      <span onclick="removeCustomDate('${d}')" style="cursor:pointer;opacity:0.8">✕</span>
+    </span>`
+  ).join('');
+}
+
 function resetApplyForm(keepAlert = false) {
   ['f-name','f-email','f-phone','f-unit','f-purpose'].forEach(id => {
     document.getElementById(id).value = '';
@@ -1108,6 +1266,10 @@ function resetApplyForm(keepAlert = false) {
   document.querySelectorAll('input.error, select.error').forEach(e => e.classList.remove('error'));
   document.getElementById('slot-preview').innerHTML = '<span style="color:var(--gray-400)">請先選擇會議室與日期</span>';
   if (!keepAlert) document.getElementById('apply-conflict-alert').style.display = 'none';
+  // 重置重複借用
+  document.getElementById('f-repeat').checked = false;
+  document.getElementById('repeat-options').style.display = 'none';
+  customDates = [];
 }
 
 // ══════════════════════════════════════════
@@ -1151,8 +1313,10 @@ function renderCalendar() {
     html += `<div class="cal-day-num">${d}</div>`;
     dayEvents.slice(0,3).forEach(e => {
       const roomClass = `cal-event-${e.room.replace(/[^a-zA-Z0-9-]/g,'')}`;
-      const keyIcon = e.keyStatus === '借出中' ? ' 🔑' : (e.keyStatus === '已歸還' ? ' ✅' : '');
-      html += `<div class="cal-event ${roomClass}">${e.room} ${e.startTime}${keyIcon}</div>`;
+      const keyIcon = e.keyStatus === '借出中' ? '🔑' : (e.keyStatus === '已歸還' ? '✅' : '');
+      const purpose = (e.purpose || e.unit || '').substring(0,8);
+      const label = `${e.startTime} ${purpose}`;
+      html += `<div class="cal-event ${roomClass}" title="${e.room} ${e.startTime}–${e.endTime}&#10;${e.purpose||''}">${keyIcon ? keyIcon+' ' : ''}${label}</div>`;
     });
     if (dayEvents.length > 3) html += `<div style="font-size:0.6rem;color:var(--gray-400)">+${dayEvents.length-3} 筆</div>`;
     html += `</div>`;
@@ -1852,15 +2016,15 @@ function showAdminLogin() {
   document.getElementById('modal-key-title').textContent = '管理員登入';
   document.getElementById('modal-key-body').innerHTML = `
     <div style="font-size:0.85rem;color:var(--gray-600);margin-bottom:12px">
-      請登入
+      請使用院辦 Google 帳號登入
     </div>
     <div class="field" style="margin-bottom:10px">
-      <label>請輸入管理員帳號</label>
-      <input type="email" id="login-email" placeholder="輸入管理員帳號"
+      <label>Google Email</label>
+      <input type="email" id="login-email" placeholder="secretary@ntunhs.edu.tw"
         onkeydown="if(event.key==='Enter')doAdminLogin()">
     </div>
     <div class="alert alert-info" style="font-size:0.8rem">
-      系統將驗證您的帳號是否在管理員名單中
+      系統將驗證您的 Email 是否在管理員名單中
     </div>
   `;
   document.getElementById('modal-key-footer').innerHTML = `
@@ -1902,7 +2066,7 @@ function showAdminLoginPage() {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
       </div>
       <div class="login-title">管理後台</div>
-      <div class="login-sub">請登入</div>
+      <div class="login-sub">請使用院辦 Google 帳號登入</div>
       <button class="btn btn-primary btn-full" onclick="showAdminLogin()">登入管理後台</button>
     </div>`;
 }
