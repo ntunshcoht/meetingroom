@@ -1787,8 +1787,8 @@ async function loadAdmin() {
 
       ${bookings.length === 0 ? '<div class="empty"><p>目前無申請記錄</p></div>' :
         `<div class="booking-list">${bookings.map(b => `
-        <div class="booking-item${b.hasConflict?' conflict':''}" onclick="showReviewModal('${b.id}')">
-          <div class="booking-item-main">
+        <div class="booking-item${b.hasConflict?' conflict':''}">
+          <div class="booking-item-main" onclick="showReviewModal('${b.id}')" style="cursor:pointer">
             <div class="booking-item-title">
               <span class="room-tag room-${b.room.replace(/[^a-zA-Z0-9-]/g,'')}">${b.room}</span>
               　${b.name}　${b.date}　${b.startTime}–${b.endTime}（${b.hours}h）
@@ -1807,6 +1807,17 @@ async function loadAdmin() {
           <div class="booking-item-right">
             ${statusBadge(b.status)}
             <span style="font-size:0.72rem;color:var(--gray-400)">${b.applyTime.substring(0,10)}</span>
+          </div>
+          <div style="grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--gray-100)">
+            ${b.status === '待審核' ? `
+              <button class="btn btn-success btn-sm" onclick="event.stopPropagation();quickApprove('${b.id}')">✅ 核准</button>
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();quickCancel('${b.id}')">✕ 拒絕</button>
+            ` : ''}
+            ${b.status === '已核准' ? `
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();quickCancel('${b.id}')">🚫 取消借用</button>
+            ` : ''}
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditModal('${b.id}')">✏️ 修改</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="event.stopPropagation();quickDelete('${b.id}')">🗑️ 刪除</button>
           </div>
         </div>
       `).join('')}</div>`}
@@ -1908,6 +1919,93 @@ async function doReject() {
   });
   if (r.ok) { closeModal('modal-review'); showToast('已拒絕申請'); loadAdmin(); }
   else showToast(`❌ ${r.error}`, true);
+}
+
+// ══════════════════════════════════════════
+// 清單快速操作：核准 / 拒絕 / 取消 / 刪除 / 修改
+// ══════════════════════════════════════════
+async function quickApprove(bookingId) {
+  if (!confirm('確認核准此申請？')) return;
+  const r = await apiGet({ action: 'reviewBooking', bookingId, decision: '核准', adminEmail, token: adminToken });
+  if (r.ok) { showToast('✅ 已核准'); loadAdmin(); }
+  else showToast(`❌ ${r.error}`, true);
+}
+
+async function quickCancel(bookingId) {
+  const reason = prompt('請輸入拒絕/取消理由（可留空）：', '') || '';
+  if (reason === null) return;
+  const r = await apiGet({ action: 'cancelBooking', bookingId, reason, adminEmail, token: adminToken });
+  if (r.ok) { showToast('已取消該申請並通知申請人'); loadAdmin(); }
+  else showToast(`❌ ${r.error}`, true);
+}
+
+async function quickDelete(bookingId) {
+  if (!confirm('確認永久刪除此申請記錄？此動作無法復原，也不會通知申請人。')) return;
+  const r = await apiGet({ action: 'deleteBooking', bookingId, adminEmail, token: adminToken });
+  if (r.ok) { showToast('已刪除申請記錄'); loadAdmin(); }
+  else showToast(`❌ ${r.error}`, true);
+}
+
+let editingBookingId = '';
+
+async function openEditModal(bookingId) {
+  editingBookingId = bookingId;
+  const r = await apiGet({ action: 'getBooking', id: bookingId, adminEmail, token: adminToken });
+  if (!r.ok) { showToast(`❌ ${r.error}`, true); return; }
+  const b = r.booking;
+
+  document.getElementById('modal-key-title').textContent = `修改申請：${b.id}`;
+  document.getElementById('modal-key-body').innerHTML = `
+    <div class="form-grid">
+      <div class="field"><label>姓名</label><input type="text" id="edit-name" value="${b.name}"></div>
+      <div class="field"><label>單位</label><input type="text" id="edit-unit" value="${b.unit}"></div>
+      <div class="field"><label>Email</label><input type="email" id="edit-email" value="${b.email}"></div>
+      <div class="field"><label>手機</label><input type="tel" id="edit-phone" value="${b.phone}"></div>
+      <div class="field">
+        <label>會議室</label>
+        <select id="edit-room">
+          <option value="F1023" ${b.room==='F1023'?'selected':''}>F1023</option>
+          <option value="F1024" ${b.room==='F1024'?'selected':''}>F1024</option>
+          <option value="F809-1" ${b.room==='F809-1'?'selected':''}>F809-1</option>
+        </select>
+      </div>
+      <div class="field"><label>日期</label><input type="date" id="edit-date" value="${b.date.replace(/\//g,'-')}"></div>
+      <div class="field"><label>開始時間</label><input type="time" id="edit-start" value="${b.startTime}" step="1800"></div>
+      <div class="field"><label>結束時間</label><input type="time" id="edit-end" value="${b.endTime}" step="1800"></div>
+      <div class="field span2"><label>用途</label><textarea id="edit-purpose" rows="2">${b.purpose}</textarea></div>
+    </div>
+    <div style="font-size:0.78rem;color:var(--gray-400);margin-top:8px">修改後會重新檢查時段衝突，但不會自動變更審核狀態。</div>
+  `;
+  document.getElementById('modal-key-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal('modal-key')">取消</button>
+    <button class="btn btn-primary" onclick="saveEditBooking()">儲存修改</button>
+  `;
+  openModal('modal-key');
+}
+
+async function saveEditBooking() {
+  const body = {
+    action:    'updateBooking',
+    bookingId: editingBookingId,
+    name:      document.getElementById('edit-name').value.trim(),
+    unit:      document.getElementById('edit-unit').value.trim(),
+    email:     document.getElementById('edit-email').value.trim(),
+    phone:     document.getElementById('edit-phone').value.trim(),
+    room:      document.getElementById('edit-room').value,
+    date:      document.getElementById('edit-date').value.replace(/-/g,'/'),
+    startTime: document.getElementById('edit-start').value,
+    endTime:   document.getElementById('edit-end').value,
+    purpose:   document.getElementById('edit-purpose').value.trim(),
+    adminEmail, token: adminToken,
+  };
+  const r = await apiGet(body);
+  if (r.ok) {
+    closeModal('modal-key');
+    showToast(r.hasConflict ? '⚠️ 已儲存，但此時段有衝突請留意' : '✅ 已儲存修改');
+    loadAdmin();
+  } else {
+    showToast(`❌ ${r.error}`, true);
+  }
 }
 
 // 從管理後台 modal 借出磁卡
