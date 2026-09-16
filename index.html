@@ -1324,7 +1324,8 @@ function renderCalendar() {
     const dateStr = `${calYear}/${String(calMonth).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
     const dateKey = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = dateKey === today;
-    const dayEvents = calEvents.filter(e => e.date === dateStr);
+    const dayEvents = calEvents.filter(e => e.date === dateStr)
+      .sort((a,b) => a.startTime.localeCompare(b.startTime));
 
     html += `<div class="cal-day${isToday?' today':''}" onclick="showDateDetail('${dateStr}')">`;
     html += `<div class="cal-day-num">${d}</div>`;
@@ -1361,7 +1362,8 @@ function calNext() {
 }
 
 function showDateDetail(dateStr) {
-  const events = calEvents.filter(e => e.date === dateStr);
+  const events = calEvents.filter(e => e.date === dateStr)
+    .sort((a,b) => a.startTime.localeCompare(b.startTime));
   if (events.length === 0) {
     document.getElementById('modal-detail-body').innerHTML =
       `<div style="text-align:center;color:var(--gray-400);padding:1rem">${dateStr}<br>此日無借用記錄</div>`;
